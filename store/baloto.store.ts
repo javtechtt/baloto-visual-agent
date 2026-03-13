@@ -7,6 +7,25 @@ export interface BallShowcaseEntry {
   color: string;
 }
 
+export interface ColorSplashTrigger {
+  id: string;
+  color: string;   // hex
+  label: string;   // "Rojo" / "Verde" etc.
+}
+
+export interface ZodiacFlashTrigger {
+  id: string;
+  sign: string;    // e.g. "Leo"
+  color: string;   // accent color from game
+}
+
+const COLORLOTO_HEX: Record<string, string> = {
+  Rojo: "#ef4444",
+  Verde: "#22c55e",
+  Azul: "#3b82f6",
+  Amarillo: "#eab308",
+};
+
 export type CheckoutStep = "cart" | "details" | "payment" | "confirm" | "success";
 export type PaymentMethod = "card" | "paypal";
 
@@ -45,6 +64,8 @@ interface BalotoStore {
   panelVisible: boolean;
   paymentMethod: PaymentMethod;
   ballQueue: BallShowcaseEntry[];
+  colorSplash: ColorSplashTrigger | null;
+  zodiacFlash: ZodiacFlashTrigger | null;
 
   // Form state — owned by store so agent can fill via tools
   detailsForm: DetailsForm;
@@ -64,6 +85,8 @@ interface BalotoStore {
   cancelActivePlay: () => void;
   removePlay: (id: string) => void;
   clearBallQueue: (ids: string[]) => void;
+  clearColorSplash: () => void;
+  clearZodiacFlash: () => void;
   openCheckout: () => void;
   advanceCheckout: () => void;
   goBackCheckout: () => void;
@@ -110,6 +133,8 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
   panelVisible: false,
   paymentMethod: "card",
   ballQueue: [],
+  colorSplash: null,
+  zodiacFlash: null,
   detailsForm: EMPTY_DETAILS,
   detailsReady: false,
   cardForm: EMPTY_CARD,
@@ -148,10 +173,26 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
     set((state) => ({ activePlay: { ...state.activePlay, bonusNumber: n } })),
 
   setActiveZodiacSign: (sign) =>
-    set((state) => ({ activePlay: { ...state.activePlay, zodiacSign: sign } })),
+    set((state) => ({
+      activePlay: { ...state.activePlay, zodiacSign: sign },
+      zodiacFlash: {
+        id: `${sign}-${Date.now()}`,
+        sign,
+        color: state.activePlay?.gameId
+          ? GAMES[state.activePlay.gameId].accentColor
+          : "#f59e0b",
+      },
+    })),
 
   setActiveColor: (color) =>
-    set((state) => ({ activePlay: { ...state.activePlay, color } })),
+    set((state) => ({
+      activePlay: { ...state.activePlay, color },
+      colorSplash: {
+        id: `${color}-${Date.now()}`,
+        color: COLORLOTO_HEX[color] ?? "#ef4444",
+        label: color,
+      },
+    })),
 
   clearActiveBonusNumber: () =>
     set((state) => ({
@@ -176,6 +217,9 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
 
   clearBallQueue: (ids) =>
     set((state) => ({ ballQueue: state.ballQueue.filter((b) => !ids.includes(b.id)) })),
+
+  clearColorSplash: () => set({ colorSplash: null }),
+  clearZodiacFlash: () => set({ zodiacFlash: null }),
 
   removePlay: (id) =>
     set((state) => ({ plays: state.plays.filter((p) => p.id !== id) })),
@@ -276,6 +320,8 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
       panelVisible: false,
       paymentMethod: "card",
       ballQueue: [],
+      colorSplash: null,
+      zodiacFlash: null,
       detailsForm: EMPTY_DETAILS,
       detailsReady: false,
       cardForm: EMPTY_CARD,

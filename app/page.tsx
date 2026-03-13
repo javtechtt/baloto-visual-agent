@@ -10,6 +10,8 @@ import AgentOrb from "@/components/agent/AgentOrb";
 import TranscriptBubble from "@/components/agent/TranscriptBubble";
 import AgentPanel from "@/components/agent/AgentPanel";
 import NumberBallShowcase from "@/components/baloto/NumberBallShowcase";
+import ColorSplash from "@/components/baloto/ColorSplash";
+import ZodiacFlash from "@/components/baloto/ZodiacFlash";
 
 export default function Home() {
   const status = useAgentStore((s) => s.status);
@@ -221,8 +223,10 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Full-screen ball showcase — fires when agent assigns numbers */}
+      {/* Full-screen effects — fire on number/color/zodiac selection */}
       <NumberBallShowcase />
+      <ColorSplash />
+      <ZodiacFlash />
     </main>
   );
 }
