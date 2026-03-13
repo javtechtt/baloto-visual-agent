@@ -20,10 +20,10 @@ export interface ZodiacFlashTrigger {
 }
 
 const COLORLOTO_HEX: Record<string, string> = {
-  Rojo: "#ef4444",
-  Verde: "#22c55e",
-  Azul: "#3b82f6",
-  Amarillo: "#eab308",
+  Red: "#ef4444",
+  Green: "#22c55e",
+  Blue: "#3b82f6",
+  Yellow: "#eab308",
 };
 
 export type CheckoutStep = "cart" | "details" | "payment" | "confirm" | "success";

@@ -134,7 +134,7 @@ export const ADDITIONAL_PRODUCTS: BalotoProduct[] = [
   },
 ];
 
-export const COLORLOTO_COLORS = ["Rojo", "Verde", "Azul", "Amarillo"];
+export const COLORLOTO_COLORS = ["Red", "Green", "Blue", "Yellow"];
 
 // ─── Serializer used by the get_product_catalog tool handler ──────────────────
 // Returns a structured plain-text catalog injected directly into the model's context
@@ -174,7 +174,7 @@ export function serializeProductCatalog(): string {
 // ─── Misc ──────────────────────────────────────────────────────────────────────
 
 export const ZODIAC_SIGNS = [
-  "Aries", "Tauro", "Géminis", "Cáncer",
-  "Leo", "Virgo", "Libra", "Escorpio",
-  "Sagitario", "Capricornio", "Acuario", "Piscis",
+  "Aries", "Taurus", "Gemini", "Cancer",
+  "Leo", "Virgo", "Libra", "Scorpio",
+  "Sagittarius", "Capricorn", "Aquarius", "Pisces",
 ];

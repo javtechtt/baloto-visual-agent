@@ -147,7 +147,7 @@ export default function PlaySlip() {
           <div className="flex gap-2">
             {COLORLOTO_COLORS.map((color) => {
               const colorMap: Record<string, string> = {
-                Rojo: "#ef4444", Verde: "#22c55e", Azul: "#3b82f6", Amarillo: "#eab308",
+                Red: "#ef4444", Green: "#22c55e", Blue: "#3b82f6", Yellow: "#eab308",
               };
               const hex = colorMap[color];
               const isSelected = activePlay.color === color;

@@ -6,17 +6,17 @@ import { useBalotoStore } from "@/store/baloto.store";
 
 const ZODIAC_SYMBOLS: Record<string, string> = {
   Aries:       "♈",
-  Tauro:       "♉",
-  "Géminis":   "♊",
-  "Cáncer":    "♋",
+  Taurus:      "♉",
+  Gemini:      "♊",
+  Cancer:      "♋",
   Leo:         "♌",
   Virgo:       "♍",
   Libra:       "♎",
-  Escorpio:    "♏",
-  Sagitario:   "♐",
-  Capricornio: "♑",
-  Acuario:     "♒",
-  Piscis:      "♓",
+  Scorpio:     "♏",
+  Sagittarius: "♐",
+  Capricorn:   "♑",
+  Aquarius:    "♒",
+  Pisces:      "♓",
 };
 
 // Total duration: 0.7s entrance + 3s hold + 0.9s exit = 4.6s

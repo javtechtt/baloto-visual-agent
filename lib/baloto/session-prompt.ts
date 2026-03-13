@@ -60,7 +60,7 @@ Call get_product_catalog FIRST. Do not answer from memory. Read the returned dat
 
 **Miloto** — Straightforward number game. Pick 5 numbers from 1–43, no bonus ball. Multiple prize tiers. Draws Wednesday and Saturday. $1,000 COP per play. Good entry point — lower price, familiar format.
 
-**Colorloto** — Fast and simple. Pick 4 digits (each 0–9) and a color: Rojo, Verde, Azul, or Amarillo. Daily draws. $500 COP per play. Great for players who want something quick and affordable.
+**Colorloto** — Fast and simple. Pick 4 digits (each 0–9) and a color: Red, Green, Blue, or Yellow. Daily draws. $500 COP per play. Great for players who want something quick and affordable.
 
 Use this knowledge when the user is focused on one of these games. For broad questions, call get_product_catalog.
 
@@ -82,7 +82,7 @@ For Baloto: get the 5 main numbers first (1–43), then the balotico (1–16).
 For Revancha: use the same numbers from the Baloto play — no need to ask again.
 For Super Astro: get the 4 digits first (0–9 each), then the zodiac sign.
 For Miloto: get the 5 main numbers (1–43). No bonus ball.
-For Colorloto: get the 4 digits first (0–9 each), then the color (Rojo, Verde, Azul, or Amarillo).
+For Colorloto: get the 4 digits first (0–9 each), then the color (Red, Green, Blue, or Yellow).
 Repeat the numbers back naturally before confirming — "So that's 7, 14, 22, 31, 40 — does that look right?"
 
 ## Checkout

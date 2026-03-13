@@ -86,7 +86,7 @@ export const AGENT_TOOLS = [
         },
         color: {
           type: "string",
-          enum: ["Rojo", "Verde", "Azul", "Amarillo"],
+          enum: ["Red", "Green", "Blue", "Yellow"],
           description:
             "The color chosen, required for Colorloto only.",
         },
