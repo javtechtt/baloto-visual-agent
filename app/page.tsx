@@ -10,6 +10,7 @@ import AgentOrb from "@/components/agent/AgentOrb";
 import TranscriptBubble from "@/components/agent/TranscriptBubble";
 import AgentPanel from "@/components/agent/AgentPanel";
 import FloatingCartButton from "@/components/agent/FloatingCartButton";
+import BackgroundParticles from "@/components/background/BackgroundParticles";
 import NumberBallShowcase from "@/components/baloto/NumberBallShowcase";
 import ColorSplash from "@/components/baloto/ColorSplash";
 import ZodiacFlash from "@/components/baloto/ZodiacFlash";
@@ -50,6 +51,9 @@ export default function Home() {
       {/* Ambient glows */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-5 pointer-events-none" style={{ background: "radial-gradient(circle, #ef4444, transparent)" }} />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full opacity-5 pointer-events-none" style={{ background: "radial-gradient(circle, #8b5cf6, transparent)" }} />
+
+      {/* Floating lottery balls + AI scan lines */}
+      <BackgroundParticles />
 
       {/* ── Agent column ──────────────────────────────────────────────────────── */}
       <motion.div
