@@ -269,6 +269,29 @@ export const AGENT_TOOLS = [
   },
   {
     type: "function" as const,
+    name: "trigger_jackpot_animation",
+    description:
+      "Triggers a full-screen jackpot rain animation — coins or dollar bills explode across the screen " +
+      "with the jackpot amount displayed in giant glowing text. " +
+      "Call this when you want to visually dangle the prize in the user's face during your sales pitch at the confirm step. " +
+      "Use it when the user shows any reluctance, hesitation, or doesn't immediately confirm their purchase. " +
+      "Optionally pass the current jackpot amount as a formatted string for dramatic effect.",
+    parameters: {
+      type: "object",
+      properties: {
+        amount: {
+          type: "string",
+          description:
+            "The jackpot prize amount to display (e.g. '$47,000,000,000 COP'). " +
+            "Retrieve this with get_current_info first if you don't have it. " +
+            "If omitted, the animation still fires but without a specific amount.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    type: "function" as const,
     name: "get_current_info",
     description:
       "Retrieve current public information from the Baloto website. " +

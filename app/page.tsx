@@ -13,6 +13,8 @@ import FloatingCartButton from "@/components/agent/FloatingCartButton";
 import NumberBallShowcase from "@/components/baloto/NumberBallShowcase";
 import ColorSplash from "@/components/baloto/ColorSplash";
 import ZodiacFlash from "@/components/baloto/ZodiacFlash";
+import JackpotRain from "@/components/baloto/JackpotRain";
+import UrgencyPulse from "@/components/baloto/UrgencyPulse";
 
 export default function Home() {
   const status = useAgentStore((s) => s.status);
@@ -231,6 +233,10 @@ export default function Home() {
       <NumberBallShowcase />
       <ColorSplash />
       <ZodiacFlash />
+
+      {/* Sales-mode effects — jackpot rain + urgency edge pulse */}
+      <JackpotRain />
+      <UrgencyPulse />
     </main>
   );
 }

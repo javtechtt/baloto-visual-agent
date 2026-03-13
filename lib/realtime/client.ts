@@ -382,6 +382,11 @@ async function executeToolCall(
       sendToolResult(callId, serializeCartState());
       break;
 
+    case "trigger_jackpot_animation":
+      baloto.triggerJackpotRain(args.amount as string | undefined);
+      sendToolResult(callId, "Jackpot animation triggered.");
+      break;
+
     case "get_current_info": {
       const query = (args.query as string) ?? "general";
       const result = await fetchBalotoInfo(query);

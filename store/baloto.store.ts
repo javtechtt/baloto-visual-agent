@@ -19,6 +19,12 @@ export interface ZodiacFlashTrigger {
   color: string;   // accent color from game
 }
 
+export interface JackpotRainTrigger {
+  id: string;
+  type: "coins" | "dollars";
+  amount?: string;
+}
+
 const COLORLOTO_HEX: Record<string, string> = {
   Red: "#ef4444",
   Green: "#22c55e",
@@ -66,6 +72,7 @@ interface BalotoStore {
   ballQueue: BallShowcaseEntry[];
   colorSplash: ColorSplashTrigger | null;
   zodiacFlash: ZodiacFlashTrigger | null;
+  jackpotRain: JackpotRainTrigger | null;
 
   // Form state — owned by store so agent can fill via tools
   detailsForm: DetailsForm;
@@ -87,6 +94,8 @@ interface BalotoStore {
   clearBallQueue: (ids: string[]) => void;
   clearColorSplash: () => void;
   clearZodiacFlash: () => void;
+  triggerJackpotRain: (amount?: string) => void;
+  clearJackpotRain: () => void;
   openCheckout: () => void;
   advanceCheckout: () => void;
   goBackCheckout: () => void;
@@ -135,6 +144,7 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
   ballQueue: [],
   colorSplash: null,
   zodiacFlash: null,
+  jackpotRain: null,
   detailsForm: EMPTY_DETAILS,
   detailsReady: false,
   cardForm: EMPTY_CARD,
@@ -220,6 +230,17 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
 
   clearColorSplash: () => set({ colorSplash: null }),
   clearZodiacFlash: () => set({ zodiacFlash: null }),
+
+  triggerJackpotRain: (amount) =>
+    set({
+      jackpotRain: {
+        id: `jackpot-${Date.now()}`,
+        type: Math.random() < 0.5 ? "coins" : "dollars",
+        amount,
+      },
+    }),
+
+  clearJackpotRain: () => set({ jackpotRain: null }),
 
   removePlay: (id) =>
     set((state) => ({ plays: state.plays.filter((p) => p.id !== id) })),
@@ -322,6 +343,7 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
       ballQueue: [],
       colorSplash: null,
       zodiacFlash: null,
+      jackpotRain: null,
       detailsForm: EMPTY_DETAILS,
       detailsReady: false,
       cardForm: EMPTY_CARD,
