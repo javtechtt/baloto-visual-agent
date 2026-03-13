@@ -13,28 +13,28 @@ function r(seed: number, min: number, max: number): number {
 
 const PALETTE = [
   {
-    border: "rgba(239,68,68,0.38)",
-    fill: "radial-gradient(circle at 33% 28%, rgba(239,68,68,0.12), rgba(239,68,68,0.04) 70%)",
-    glow: "rgba(239,68,68,0.14)",
-    text: "rgba(239,68,68,0.65)",
+    border: "rgba(239,68,68,0.65)",
+    fill: "radial-gradient(circle at 33% 28%, rgba(239,68,68,0.28), rgba(239,68,68,0.08) 70%)",
+    glow: "rgba(239,68,68,0.35)",
+    text: "rgba(239,68,68,0.9)",
   },
   {
-    border: "rgba(139,92,246,0.38)",
-    fill: "radial-gradient(circle at 33% 28%, rgba(139,92,246,0.12), rgba(139,92,246,0.04) 70%)",
-    glow: "rgba(139,92,246,0.14)",
-    text: "rgba(139,92,246,0.65)",
+    border: "rgba(139,92,246,0.65)",
+    fill: "radial-gradient(circle at 33% 28%, rgba(139,92,246,0.28), rgba(139,92,246,0.08) 70%)",
+    glow: "rgba(139,92,246,0.35)",
+    text: "rgba(139,92,246,0.9)",
   },
   {
-    border: "rgba(255,255,255,0.22)",
-    fill: "radial-gradient(circle at 33% 28%, rgba(255,255,255,0.08), rgba(255,255,255,0.02) 70%)",
-    glow: "rgba(255,255,255,0.08)",
-    text: "rgba(255,255,255,0.5)",
+    border: "rgba(255,255,255,0.45)",
+    fill: "radial-gradient(circle at 33% 28%, rgba(255,255,255,0.18), rgba(255,255,255,0.05) 70%)",
+    glow: "rgba(255,255,255,0.2)",
+    text: "rgba(255,255,255,0.85)",
   },
   {
-    border: "rgba(251,191,36,0.32)",
-    fill: "radial-gradient(circle at 33% 28%, rgba(251,191,36,0.1), rgba(251,191,36,0.03) 70%)",
-    glow: "rgba(251,191,36,0.12)",
-    text: "rgba(251,191,36,0.6)",
+    border: "rgba(251,191,36,0.6)",
+    fill: "radial-gradient(circle at 33% 28%, rgba(251,191,36,0.24), rgba(251,191,36,0.07) 70%)",
+    glow: "rgba(251,191,36,0.3)",
+    text: "rgba(251,191,36,0.9)",
   },
 ];
 
@@ -58,8 +58,8 @@ const BALLS: FloatingBall[] = Array.from({ length: 22 }, (_, i) => ({
   number: Math.round(r(i * 7 + 1, 1, 43)),
   x: r(i * 3 + 2, 2, 96),
   y: r(i * 5 + 3, 3, 91),
-  size: r(i * 11 + 4, 15, 32),
-  baseOpacity: r(i * 13 + 5, 0.06, 0.17),
+  size: r(i * 11 + 4, 20, 42),
+  baseOpacity: r(i * 13 + 5, 0.18, 0.42),
   floatRange: r(i * 17 + 6, 18, 52),
   duration: r(i * 19 + 7, 5, 14),
   delay: r(i * 23 + 8, 0, 7),
@@ -86,7 +86,7 @@ export default function BackgroundParticles() {
               height: ball.size,
               background: c.fill,
               border: `1px solid ${c.border}`,
-              boxShadow: `0 0 10px ${c.glow}, inset 0 0 6px ${c.glow}`,
+              boxShadow: `0 0 18px ${c.glow}, 0 0 6px ${c.glow}, inset 0 0 8px ${c.glow}`,
               fontSize: Math.round(ball.size * 0.4),
               fontWeight: 800,
               color: c.text,
@@ -113,9 +113,9 @@ export default function BackgroundParticles() {
       <motion.div
         className="absolute left-0 right-0"
         style={{
-          height: 1,
+          height: 2,
           background:
-            "linear-gradient(90deg, transparent 0%, rgba(239,68,68,0.12) 15%, rgba(139,92,246,0.22) 45%, rgba(139,92,246,0.22) 55%, rgba(239,68,68,0.12) 85%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, rgba(239,68,68,0.3) 15%, rgba(139,92,246,0.5) 45%, rgba(139,92,246,0.5) 55%, rgba(239,68,68,0.3) 85%, transparent 100%)",
         }}
         initial={{ top: "0%" }}
         animate={{ top: ["0%", "100%"] }}
@@ -133,7 +133,7 @@ export default function BackgroundParticles() {
         style={{
           height: 1,
           background:
-            "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.06) 70%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 30%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.18) 70%, transparent 100%)",
         }}
         initial={{ top: "50%" }}
         animate={{ top: ["50%", "100%", "0%", "50%"] }}
