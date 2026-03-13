@@ -10,7 +10,11 @@ import AgentOrb from "@/components/agent/AgentOrb";
 import TranscriptBubble from "@/components/agent/TranscriptBubble";
 import AgentPanel from "@/components/agent/AgentPanel";
 import FloatingCartButton from "@/components/agent/FloatingCartButton";
-import BackgroundParticles from "@/components/background/BackgroundParticles";
+import dynamic from "next/dynamic";
+const BackgroundParticles = dynamic(
+  () => import("@/components/background/BackgroundParticles"),
+  { ssr: false }
+);
 import NumberBallShowcase from "@/components/baloto/NumberBallShowcase";
 import ColorSplash from "@/components/baloto/ColorSplash";
 import ZodiacFlash from "@/components/baloto/ZodiacFlash";
