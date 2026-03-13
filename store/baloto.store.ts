@@ -1,5 +1,11 @@
 import { create } from "zustand";
-import { GameId } from "@/lib/baloto/games";
+import { GameId, GAMES } from "@/lib/baloto/games";
+
+export interface BallShowcaseEntry {
+  id: string;
+  number: number;
+  color: string;
+}
 
 export type CheckoutStep = "cart" | "details" | "payment" | "confirm" | "success";
 export type PaymentMethod = "card" | "paypal";
@@ -38,6 +44,7 @@ interface BalotoStore {
   checkoutStep: CheckoutStep | null;
   panelVisible: boolean;
   paymentMethod: PaymentMethod;
+  ballQueue: BallShowcaseEntry[];
 
   // Form state — owned by store so agent can fill via tools
   detailsForm: DetailsForm;
@@ -56,6 +63,7 @@ interface BalotoStore {
   confirmPlay: () => void;
   cancelActivePlay: () => void;
   removePlay: (id: string) => void;
+  clearBallQueue: (ids: string[]) => void;
   openCheckout: () => void;
   advanceCheckout: () => void;
   goBackCheckout: () => void;
@@ -101,6 +109,7 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
   checkoutStep: null,
   panelVisible: false,
   paymentMethod: "card",
+  ballQueue: [],
   detailsForm: EMPTY_DETAILS,
   detailsReady: false,
   cardForm: EMPTY_CARD,
@@ -118,7 +127,22 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
     }),
 
   setActiveNumbers: (numbers) =>
-    set((state) => ({ activePlay: { ...state.activePlay, numbers } })),
+    set((state) => {
+      const prev = state.activePlay?.numbers ?? [];
+      const newNums = numbers.filter((n) => !prev.includes(n));
+      const color = state.activePlay?.gameId
+        ? GAMES[state.activePlay.gameId].accentColor
+        : "#ef4444";
+      const newEntries: BallShowcaseEntry[] = newNums.map((n) => ({
+        id: `${n}-${Date.now()}-${Math.random()}`,
+        number: n,
+        color,
+      }));
+      return {
+        activePlay: { ...state.activePlay, numbers },
+        ballQueue: [...state.ballQueue, ...newEntries],
+      };
+    }),
 
   setActiveBonusNumber: (n) =>
     set((state) => ({ activePlay: { ...state.activePlay, bonusNumber: n } })),
@@ -149,6 +173,9 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
   },
 
   cancelActivePlay: () => set({ activePlay: null }),
+
+  clearBallQueue: (ids) =>
+    set((state) => ({ ballQueue: state.ballQueue.filter((b) => !ids.includes(b.id)) })),
 
   removePlay: (id) =>
     set((state) => ({ plays: state.plays.filter((p) => p.id !== id) })),
@@ -248,6 +275,7 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
       checkoutStep: null,
       panelVisible: false,
       paymentMethod: "card",
+      ballQueue: [],
       detailsForm: EMPTY_DETAILS,
       detailsReady: false,
       cardForm: EMPTY_CARD,

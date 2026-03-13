@@ -9,6 +9,7 @@ import { connectAgent, disconnectAgent } from "@/lib/realtime/client";
 import AgentOrb from "@/components/agent/AgentOrb";
 import TranscriptBubble from "@/components/agent/TranscriptBubble";
 import AgentPanel from "@/components/agent/AgentPanel";
+import NumberBallShowcase from "@/components/baloto/NumberBallShowcase";
 
 export default function Home() {
   const status = useAgentStore((s) => s.status);
@@ -219,6 +220,9 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Full-screen ball showcase — fires when agent assigns numbers */}
+      <NumberBallShowcase />
     </main>
   );
 }
