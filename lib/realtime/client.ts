@@ -143,7 +143,7 @@ function configureSession() {
 // injects a silent system message so the agent always has current state.
 
 function serializeCartState(): string {
-  const { plays, checkoutStep } = useBalotoStore.getState();
+  const { plays, checkoutStep, panelVisible } = useBalotoStore.getState();
   const lines: string[] = ["[CURRENT CART STATE]"];
 
   if (plays.length === 0) {
@@ -160,6 +160,7 @@ function serializeCartState(): string {
   }
 
   lines.push(checkoutStep ? `Checkout step: ${checkoutStep}` : "Checkout: not open");
+  lines.push(`Panel: ${panelVisible ? "open" : "closed"}`);
   return lines.join("\n");
 }
 
@@ -187,11 +188,17 @@ function scheduleCartStatePush(): void {
 function subscribeToCartState(): void {
   let prevPlays = useBalotoStore.getState().plays;
   let prevStep = useBalotoStore.getState().checkoutStep;
+  let prevPanel = useBalotoStore.getState().panelVisible;
 
   storeUnsubscribe = useBalotoStore.subscribe((state) => {
-    if (state.plays !== prevPlays || state.checkoutStep !== prevStep) {
+    if (
+      state.plays !== prevPlays ||
+      state.checkoutStep !== prevStep ||
+      state.panelVisible !== prevPanel
+    ) {
       prevPlays = state.plays;
       prevStep = state.checkoutStep;
+      prevPanel = state.panelVisible;
       scheduleCartStatePush();
     }
   });
@@ -270,6 +277,11 @@ async function executeToolCall(
     case "show_games":
       baloto.setPanelVisible(true);
       sendToolResult(callId, "Games panel is now visible.");
+      break;
+
+    case "set_panel_visible":
+      baloto.setPanelVisible(args.visible as boolean);
+      sendToolResult(callId, `Panel is now ${args.visible ? "open" : "closed"}.`);
       break;
 
     case "select_game":

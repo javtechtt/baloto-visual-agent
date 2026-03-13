@@ -9,6 +9,7 @@ import { connectAgent, disconnectAgent } from "@/lib/realtime/client";
 import AgentOrb from "@/components/agent/AgentOrb";
 import TranscriptBubble from "@/components/agent/TranscriptBubble";
 import AgentPanel from "@/components/agent/AgentPanel";
+import FloatingCartButton from "@/components/agent/FloatingCartButton";
 import NumberBallShowcase from "@/components/baloto/NumberBallShowcase";
 import ColorSplash from "@/components/baloto/ColorSplash";
 import ZodiacFlash from "@/components/baloto/ZodiacFlash";
@@ -222,6 +223,9 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Floating cart toggle button */}
+      <FloatingCartButton />
 
       {/* Full-screen effects — fire on number/color/zodiac selection */}
       <NumberBallShowcase />

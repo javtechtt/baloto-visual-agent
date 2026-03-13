@@ -250,6 +250,25 @@ export const AGENT_TOOLS = [
   },
   {
     type: "function" as const,
+    name: "set_panel_visible",
+    description:
+      "Open or close the game/cart panel on the right side of the screen. " +
+      "Call with visible=true when the user asks to see their cart, open the panel, or show games. " +
+      "Call with visible=false when the user asks to close or hide the panel. " +
+      "The current panel state is always included in [CURRENT CART STATE] pushes — do NOT guess.",
+    parameters: {
+      type: "object",
+      properties: {
+        visible: {
+          type: "boolean",
+          description: "true to open the panel, false to close it.",
+        },
+      },
+      required: ["visible"],
+    },
+  },
+  {
+    type: "function" as const,
     name: "get_current_info",
     description:
       "Retrieve current public information from the Baloto website. " +
