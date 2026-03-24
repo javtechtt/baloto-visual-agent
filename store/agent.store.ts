@@ -8,14 +8,18 @@ export type AgentStatus =
   | "speaking"    // Model is outputting audio
   | "error";      // Something went wrong
 
+export type ActiveAgent = "sales" | "checkout";
+
 interface AgentStore {
   status: AgentStatus;
+  activeAgent: ActiveAgent;
   transcript: string;        // Latest agent speech text (streamed)
   userTranscript: string;    // Latest user speech text (from input transcription)
   audioLevel: number;        // 0–1, used by the visualizer
   error: string | null;
 
   setStatus: (status: AgentStatus) => void;
+  setActiveAgent: (agent: ActiveAgent) => void;
   setTranscript: (text: string) => void;
   appendTranscript: (delta: string) => void;
   setUserTranscript: (text: string) => void;
@@ -26,12 +30,14 @@ interface AgentStore {
 
 export const useAgentStore = create<AgentStore>((set) => ({
   status: "idle",
+  activeAgent: "sales",
   transcript: "",
   userTranscript: "",
   audioLevel: 0,
   error: null,
 
   setStatus: (status) => set({ status }),
+  setActiveAgent: (agent) => set({ activeAgent: agent }),
   setTranscript: (text) => set({ transcript: text }),
   appendTranscript: (delta) =>
     set((state) => ({ transcript: state.transcript + delta })),
@@ -41,6 +47,7 @@ export const useAgentStore = create<AgentStore>((set) => ({
   reset: () =>
     set({
       status: "idle",
+      activeAgent: "sales",
       transcript: "",
       userTranscript: "",
       audioLevel: 0,

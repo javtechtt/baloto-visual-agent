@@ -73,6 +73,8 @@ interface BalotoStore {
   colorSplash: ColorSplashTrigger | null;
   zodiacFlash: ZodiacFlashTrigger | null;
   jackpotRain: JackpotRainTrigger | null;
+  gameIconsFloat: boolean;
+  showcasedGame: GameId | null;
 
   // Form state — owned by store so agent can fill via tools
   detailsForm: DetailsForm;
@@ -96,6 +98,9 @@ interface BalotoStore {
   clearZodiacFlash: () => void;
   triggerJackpotRain: (amount?: string) => void;
   clearJackpotRain: () => void;
+  setGameIconsFloat: () => void;
+  clearGameIconsFloat: () => void;
+  setShowcasedGame: (gameId: GameId | null) => void;
   openCheckout: () => void;
   advanceCheckout: () => void;
   goBackCheckout: () => void;
@@ -145,6 +150,8 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
   colorSplash: null,
   zodiacFlash: null,
   jackpotRain: null,
+  gameIconsFloat: false,
+  showcasedGame: null,
   detailsForm: EMPTY_DETAILS,
   detailsReady: false,
   cardForm: EMPTY_CARD,
@@ -241,6 +248,9 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
     }),
 
   clearJackpotRain: () => set({ jackpotRain: null }),
+  setGameIconsFloat: () => set({ gameIconsFloat: true }),
+  clearGameIconsFloat: () => set({ gameIconsFloat: false }),
+  setShowcasedGame: (gameId) => set({ showcasedGame: gameId }),
 
   removePlay: (id) =>
     set((state) => ({ plays: state.plays.filter((p) => p.id !== id) })),
@@ -344,6 +354,8 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
       colorSplash: null,
       zodiacFlash: null,
       jackpotRain: null,
+      gameIconsFloat: false,
+      showcasedGame: null,
       detailsForm: EMPTY_DETAILS,
       detailsReady: false,
       cardForm: EMPTY_CARD,

@@ -1,17 +1,17 @@
 "use client";
 
-import { SYSTEM_PROMPT } from "@/lib/baloto/session-prompt";
-import { AGENT_TOOLS } from "@/lib/realtime/tools";
+import { getAgentConfig, type AgentType } from "@/lib/agents/index";
+import { getStateSnapshot } from "@/lib/realtime/state-snapshot";
 import { useAgentStore } from "@/store/agent.store";
 import { useBalotoStore } from "@/store/baloto.store";
 import { GameId, serializeProductCatalog } from "@/lib/baloto/games";
-import type { PaymentMethod } from "@/store/baloto.store";
+import { GAMES } from "@/lib/baloto/games";
+import type { CheckoutStep, PaymentMethod } from "@/store/baloto.store";
 import { startAudioVisualization, stopAudioVisualization } from "@/lib/audio/visualizer";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface RealtimeSession {
-  id: string;
   client_secret: { value: string };
 }
 
@@ -20,8 +20,8 @@ interface RealtimeSession {
 let peerConnection: RTCPeerConnection | null = null;
 let dataChannel: RTCDataChannel | null = null;
 let audioElement: HTMLAudioElement | null = null;
-let storeUnsubscribe: (() => void) | null = null;
-let cartPushTimer: ReturnType<typeof setTimeout> | null = null;
+let audioContext: AudioContext | null = null;
+let currentAgent: AgentType = "sales";
 
 // ─── Main connect function ────────────────────────────────────────────────────
 
@@ -31,30 +31,76 @@ export async function connectAgent(): Promise<void> {
   try {
     setStatus("connecting");
 
-    // 1. Get ephemeral token from our Next.js backend
-    const sessionRes = await fetch("/api/session", { method: "POST" });
-    if (!sessionRes.ok) throw new Error("Failed to create session");
-    const session: RealtimeSession = await sessionRes.json();
-    const ephemeralKey = session.client_secret.value;
+    // ── Safari fix: getUserMedia MUST be the first await in the gesture handler.
+    // After any await, Safari invalidates the user-gesture token and silently
+    // blocks mic access. All gesture-sensitive setup happens here, before the
+    // token fetch.
+    const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    // 2. Set up the RTCPeerConnection
-    peerConnection = new RTCPeerConnection();
-
-    // 3. Set up remote audio output
+    // Create and prime the audio output element while the gesture is still active.
+    // Safari blocks autoplay on elements created after an async boundary.
     audioElement = document.createElement("audio");
     audioElement.autoplay = true;
+
+    // Resume an AudioContext to satisfy iOS audio session policy.
+    const AudioCtxClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext;
+    if (AudioCtxClass && !audioContext) {
+      audioContext = new AudioCtxClass();
+      audioContext.resume().catch(() => {});
+    }
+
+    // ── Token exchange ────────────────────────────────────────────────────────
+    const controller = new AbortController();
+    const tokenTimeout = setTimeout(() => controller.abort(), 15_000);
+    let sessionRes: Response;
+    try {
+      sessionRes = await fetch("/api/session", {
+        method: "POST",
+        signal: controller.signal,
+        cache: "no-store",
+      });
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        throw new Error("Session request timed out — check your connection");
+      }
+      throw err;
+    } finally {
+      clearTimeout(tokenTimeout);
+    }
+
+    if (!sessionRes.ok) {
+      const errText = await sessionRes.text();
+      throw new Error(`Session error (${sessionRes.status}): ${errText}`);
+    }
+
+    const session: RealtimeSession = await sessionRes.json();
+    const ephemeralKey = session.client_secret.value;
+    if (!ephemeralKey) throw new Error("No ephemeral key in session response");
+
+    // ── WebRTC setup ──────────────────────────────────────────────────────────
+    peerConnection = new RTCPeerConnection({
+      iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
+    });
+
+    // Safari fix: e.streams[0] can be empty on some versions — fall back to
+    // constructing a MediaStream from the track directly. Also explicitly call
+    // play() and handle the promise (Safari autoplay policy).
     peerConnection.ontrack = (event) => {
-      if (audioElement) audioElement.srcObject = event.streams[0];
+      if (audioElement) {
+        audioElement.srcObject =
+          event.streams[0] ?? new MediaStream([event.track]);
+        audioElement.play().catch(() => {});
+      }
     };
 
-    // 4. Capture microphone
-    const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     micStream.getTracks().forEach((track) => {
       peerConnection!.addTrack(track, micStream);
     });
     startAudioVisualization(micStream);
 
-    // 5. Create data channel for JSON events
     dataChannel = peerConnection.createDataChannel("oai-events");
     dataChannel.onopen = () => {
       configureSession();
@@ -62,14 +108,32 @@ export async function connectAgent(): Promise<void> {
     dataChannel.onmessage = (event) => {
       handleServerEvent(JSON.parse(event.data));
     };
+    dataChannel.onclose = () => {
+      useAgentStore.getState().setStatus("idle");
+    };
+    dataChannel.onerror = (event) => {
+      const err = event as RTCErrorEvent;
+      useAgentStore
+        .getState()
+        .setError(err.error?.message ?? "Data channel error");
+    };
 
-    // 6. Create WebRTC offer
+    // Monitor ICE state — auto-disconnect on failure
+    peerConnection.oniceconnectionstatechange = () => {
+      if (peerConnection?.iceConnectionState === "failed") {
+        useAgentStore
+          .getState()
+          .setError("Connection failed — please try again");
+        disconnectAgent();
+      }
+    };
+
+    // ── SDP negotiation ───────────────────────────────────────────────────────
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
-    // 7. Exchange SDP with OpenAI
     const sdpRes = await fetch(
-      `https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview`,
+      "https://api.openai.com/v1/realtime?model=gpt-realtime-1.5",
       {
         method: "POST",
         headers: {
@@ -82,15 +146,14 @@ export async function connectAgent(): Promise<void> {
 
     if (!sdpRes.ok) {
       const errText = await sdpRes.text();
-      throw new Error(`WebRTC negotiation failed: ${errText}`);
+      throw new Error(`WebRTC negotiation failed (${sdpRes.status}): ${errText}`);
     }
 
     const answerSdp = await sdpRes.text();
-    await peerConnection.setRemoteDescription({
-      type: "answer",
-      sdp: answerSdp,
-    });
-
+    // Safari fix: requires RTCSessionDescription constructor, not a plain object.
+    await peerConnection.setRemoteDescription(
+      new RTCSessionDescription({ type: "answer", sdp: answerSdp })
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("[RealtimeClient] Connection error:", message);
@@ -102,12 +165,16 @@ export async function connectAgent(): Promise<void> {
 // ─── Session configuration ────────────────────────────────────────────────────
 
 function configureSession() {
+  const config = getAgentConfig("sales");
+  currentAgent = "sales";
+  useAgentStore.getState().setActiveAgent("sales");
+
   sendEvent({
     type: "session.update",
     session: {
       modalities: ["audio", "text"],
-      instructions: SYSTEM_PROMPT,
-      voice: "coral",
+      instructions: config.prompt,
+      voice: config.voice,
       input_audio_format: "pcm16",
       output_audio_format: "pcm16",
       input_audio_transcription: {
@@ -119,12 +186,11 @@ function configureSession() {
         prefix_padding_ms: 300,
         silence_duration_ms: 600,
       },
-      tools: AGENT_TOOLS,
+      tools: config.tools,
       tool_choice: "auto",
     },
   });
 
-  // Initial greeting — English
   sendEvent({
     type: "response.create",
     response: {
@@ -135,73 +201,45 @@ function configureSession() {
   });
 
   useAgentStore.getState().setStatus("listening");
-  subscribeToCartState();
 }
 
-// ─── Cart state sync ──────────────────────────────────────────────────────────
-// Watches plays[] and checkoutStep. On any change (including manual UI actions),
-// injects a silent system message so the agent always has current state.
+// ─── Agent switching ──────────────────────────────────────────────────────────
+// Reconfigures the live session mid-conversation — no reconnect needed.
 
-function serializeCartState(): string {
-  const { plays, checkoutStep, panelVisible } = useBalotoStore.getState();
-  const lines: string[] = ["[CURRENT CART STATE]"];
+function switchToAgent(type: AgentType) {
+  const config = getAgentConfig(type);
+  currentAgent = type;
+  useAgentStore.getState().setActiveAgent(type);
 
-  if (plays.length === 0) {
-    lines.push("Cart: empty");
-  } else {
-    lines.push(`Cart (${plays.length} play${plays.length !== 1 ? "s" : ""}):`);
-    plays.forEach((play, i) => {
-      let desc = `  ${i + 1}. ${play.gameId}: ${play.numbers.join(", ")}`;
-      if (play.bonusNumber !== undefined) desc += ` | balotico ${play.bonusNumber}`;
-      if (play.zodiacSign) desc += ` | ${play.zodiacSign}`;
-      if (play.color) desc += ` | ${play.color}`;
-      lines.push(desc);
-    });
-  }
-
-  lines.push(checkoutStep ? `Checkout step: ${checkoutStep}` : "Checkout: not open");
-  lines.push(`Panel: ${panelVisible ? "open" : "closed"}`);
-  return lines.join("\n");
-}
-
-function pushCartStateToAgent(): void {
-  if (dataChannel?.readyState !== "open") return;
-  // Inject as a silent system message — no response.create, agent won't speak unprompted
+  // NOTE: voice is intentionally omitted here.
+  // OpenAI throws "Cannot update a conversation's voice if assistant audio is present"
+  // if voice is included in session.update while the audio track is active.
+  // Voice is set once at session creation (configureSession) and cannot be changed mid-session.
   sendEvent({
-    type: "conversation.item.create",
-    item: {
-      type: "message",
-      role: "system",
-      content: [{ type: "input_text", text: serializeCartState() }],
+    type: "session.update",
+    session: {
+      instructions: config.prompt,
+      tools: config.tools,
+      tool_choice: "auto",
     },
   });
-}
 
-function scheduleCartStatePush(): void {
-  if (cartPushTimer) clearTimeout(cartPushTimer);
-  cartPushTimer = setTimeout(() => {
-    pushCartStateToAgent();
-    cartPushTimer = null;
-  }, 400);
-}
+  const handoffInstruction =
+    type === "checkout"
+      ? "You are now Karol. The checkout is open at the cart step. Read the cart from the state snapshot in the tool result. Introduce yourself in one sentence. List the plays and total, then ask 'Ready to proceed?' — one short question. The moment the customer says yes, call advance_checkout immediately — no second confirmation, no recap. Move fast."
+      : "You are Loto again. Welcome the customer back warmly in one sentence. Ask how you can help — they may want to explore games, ask questions, or add more plays.";
 
-function subscribeToCartState(): void {
-  let prevPlays = useBalotoStore.getState().plays;
-  let prevStep = useBalotoStore.getState().checkoutStep;
-  let prevPanel = useBalotoStore.getState().panelVisible;
-
-  storeUnsubscribe = useBalotoStore.subscribe((state) => {
-    if (
-      state.plays !== prevPlays ||
-      state.checkoutStep !== prevStep ||
-      state.panelVisible !== prevPanel
-    ) {
-      prevPlays = state.plays;
-      prevStep = state.checkoutStep;
-      prevPanel = state.panelVisible;
-      scheduleCartStatePush();
-    }
-  });
+  // 500ms delay gives the Realtime API time to fully apply the session.update
+  // (tools + instructions) before we trigger the first response as the new agent.
+  setTimeout(() => {
+    sendEvent({
+      type: "response.create",
+      response: {
+        modalities: ["audio", "text"],
+        instructions: handoffInstruction,
+      },
+    });
+  }, 500);
 }
 
 // ─── Server event handler ─────────────────────────────────────────────────────
@@ -233,13 +271,11 @@ function handleServerEvent(event: Record<string, unknown>) {
       setTranscript("");
       break;
 
-    // Tool call — arguments are fully streamed, ready to execute
+    // Tool call — arguments fully streamed, ready to execute
     case "response.function_call_arguments.done": {
       const callId = event.call_id as string;
       const name = event.name as string;
       const args = JSON.parse((event.arguments as string) || "{}");
-
-      // Async — handles both UI dispatch and result sending
       executeToolCall(callId, name, args);
       break;
     }
@@ -257,8 +293,11 @@ function handleServerEvent(event: Record<string, unknown>) {
 }
 
 // ─── Tool executor ────────────────────────────────────────────────────────────
-// Every tool MUST call sendToolResult — otherwise the model's conversation
-// stalls waiting for a function_call_output that never arrives.
+// Every tool MUST call sendToolResult — otherwise the model stalls waiting
+// for a function_call_output that never arrives.
+//
+// All results are sent as JSON objects. The state snapshot is automatically
+// merged in by sendToolResult — tool handlers never call getStateSnapshot() directly.
 
 async function executeToolCall(
   callId: string,
@@ -268,135 +307,283 @@ async function executeToolCall(
   const baloto = useBalotoStore.getState();
 
   switch (name) {
-    // Returns the authoritative, code-defined product list.
-    // This makes catalog responses data-driven rather than memory-dependent.
+    // ── Sales tools ───────────────────────────────────────────────────────────
+
     case "get_product_catalog":
-      sendToolResult(callId, serializeProductCatalog());
+      sendToolResult(callId, {
+        action: "get_product_catalog",
+        catalog: serializeProductCatalog(),
+      });
       break;
 
     case "show_games":
       baloto.setPanelVisible(true);
-      sendToolResult(callId, "Games panel is now visible.");
+      baloto.setGameIconsFloat();
+      if (args.focusGameId) baloto.setShowcasedGame(args.focusGameId as GameId);
+      sendToolResult(callId, { action: "show_games" });
       break;
 
     case "set_panel_visible":
       baloto.setPanelVisible(args.visible as boolean);
-      sendToolResult(callId, `Panel is now ${args.visible ? "open" : "closed"}.`);
+      sendToolResult(callId, {
+        action: "set_panel_visible",
+        visible: args.visible,
+      });
       break;
 
     case "select_game":
       baloto.selectGame(args.gameId as GameId);
-      sendToolResult(callId, `Game "${args.gameId}" selected and highlighted.`);
+      sendToolResult(callId, {
+        action: "select_game",
+        gameId: args.gameId,
+      });
       break;
 
     case "set_numbers": {
-      const gameId = (args.gameId as GameId) ?? baloto.selectedGame;
-      if (!gameId) {
-        sendToolResult(callId, "Error: no gameId provided and no game is selected.");
+      const gameId = args.gameId as GameId;
+      const numbers = args.numbers as number[];
+      const game = GAMES[gameId];
+
+      if (!game) {
+        sendToolResult(callId, {
+          action: "set_numbers",
+          success: false,
+          error: `Unknown game: ${gameId}`,
+        });
         break;
       }
+
+      // Validate count
+      if (numbers.length !== game.pickCount) {
+        sendToolResult(callId, {
+          action: "set_numbers",
+          success: false,
+          error: `${gameId} requires exactly ${game.pickCount} main numbers — got ${numbers.length}.`,
+        });
+        break;
+      }
+
+      // Validate range (digits: 0–max, numbers: 1–max)
+      const minVal =
+        gameId === "superastro" || gameId === "colorloto" ? 0 : 1;
+      const outOfRange = numbers.filter(
+        (n) => n < minVal || n > game.mainPoolMax
+      );
+      if (outOfRange.length > 0) {
+        sendToolResult(callId, {
+          action: "set_numbers",
+          success: false,
+          error: `Numbers out of range for ${gameId}: [${outOfRange.join(", ")}]. Valid range: ${minVal}–${game.mainPoolMax}.`,
+        });
+        break;
+      }
+
+      // Validate bonus (balotico for baloto)
+      if (args.bonusNumber !== undefined && game.bonusPoolMax) {
+        const bn = args.bonusNumber as number;
+        if (bn < 1 || bn > game.bonusPoolMax) {
+          sendToolResult(callId, {
+            action: "set_numbers",
+            success: false,
+            error: `Balotico out of range: ${bn}. Must be 1–${game.bonusPoolMax}.`,
+          });
+          break;
+        }
+      }
+
+      // All valid — update store
       baloto.startPlay(gameId);
-      baloto.setActiveNumbers(args.numbers as number[]);
-      if (args.bonusNumber !== undefined) {
+      baloto.setActiveNumbers(numbers);
+      if (args.bonusNumber !== undefined)
         baloto.setActiveBonusNumber(args.bonusNumber as number);
-      }
-      if (args.zodiacSign !== undefined) {
+      if (args.zodiacSign !== undefined)
         baloto.setActiveZodiacSign(args.zodiacSign as string);
-      }
-      if (args.color !== undefined) {
+      if (args.color !== undefined)
         baloto.setActiveColor(args.color as string);
-      }
-      sendToolResult(callId, `Numbers set for ${gameId}.`);
+
+      sendToolResult(callId, {
+        action: "set_numbers",
+        success: true,
+        gameId,
+        numbers,
+      });
       break;
     }
 
     case "confirm_play": {
       const pending = baloto.activePlay;
       if (!pending?.gameId) {
-        sendToolResult(callId, "Error: no active play to confirm. Call set_numbers first.");
+        sendToolResult(callId, {
+          action: "confirm_play",
+          success: false,
+          error: "No active play to confirm. Call set_numbers first.",
+        });
         break;
       }
       baloto.confirmPlay();
-      sendToolResult(callId, `${pending.gameId} play confirmed and added to cart.`);
+      sendToolResult(callId, {
+        action: "confirm_play",
+        success: true,
+        gameId: pending.gameId,
+      });
       break;
     }
 
     case "remove_play": {
       const targetGameId = args.gameId as GameId;
       const allPlays = baloto.plays;
-      const target = [...allPlays].reverse().find((p) => p.gameId === targetGameId);
+      const target = [...allPlays]
+        .reverse()
+        .find((p) => p.gameId === targetGameId);
       if (!target) {
-        sendToolResult(callId, `No ${targetGameId} play found in cart.`);
+        sendToolResult(callId, {
+          action: "remove_play",
+          success: false,
+          error: `No ${targetGameId} play found in cart.`,
+        });
         break;
       }
       baloto.removePlay(target.id);
-      sendToolResult(callId, `${targetGameId} play removed from cart.`);
+      sendToolResult(callId, {
+        action: "remove_play",
+        success: true,
+        gameId: targetGameId,
+      });
       break;
     }
 
-    case "go_to_checkout_step":
-      baloto.goToCheckoutStep(args.step as import("@/store/baloto.store").CheckoutStep);
-      sendToolResult(callId, `Navigated to checkout step: ${args.step}.`);
+    case "get_cart_state":
+      sendToolResult(callId, { action: "get_cart_state" });
       break;
 
-    case "open_checkout":
+    case "trigger_jackpot_animation":
+      baloto.triggerJackpotRain(args.amount as string | undefined);
+      sendToolResult(callId, { action: "trigger_jackpot_animation" });
+      break;
+
+    case "get_current_info": {
+      const query = (args.query as string) ?? "general";
+      const result = await fetchBalotoInfo(query);
+      sendToolResult(callId, { action: "get_current_info", data: result });
+      break;
+    }
+
+    case "transfer_to_checkout": {
       baloto.openCheckout();
-      sendToolResult(callId, "Checkout flow opened.");
+      // Send the tool result first (contains state snapshot with checkout open),
+      // then switch agent — switchToAgent sends its own response.create.
+      sendToolResultOnly(callId, {
+        action: "transfer_to_checkout",
+        message: "Checkout opened. Transferring to Karol.",
+      });
+      switchToAgent("checkout");
       break;
+    }
 
-    case "advance_checkout":
-      baloto.advanceCheckout();
-      sendToolResult(callId, "Advanced to next checkout step.");
-      break;
+    // ── Checkout tools ────────────────────────────────────────────────────────
 
-    case "fill_details":
+    case "submit_details": {
       baloto.setDetailsForm(
         args.name as string,
         args.email as string,
         args.idNumber as string
       );
-      sendToolResult(callId, "Details form filled.");
+      const before = useBalotoStore.getState().checkoutStep;
+      baloto.advanceCheckout();
+      const after = useBalotoStore.getState().checkoutStep;
+      const advanced = before !== after;
+      sendToolResult(callId, {
+        action: "submit_details",
+        success: advanced,
+        message: advanced
+          ? `Details saved. Moved to "${after}" step.`
+          : `Details saved but could not advance — validation failed. Still on "${before}" step.`,
+      });
       break;
+    }
 
-    case "fill_card_payment":
+    case "submit_card_payment": {
+      baloto.setPaymentMethod("card" as PaymentMethod);
       baloto.setCardForm(
         args.cardNumber as string,
         args.cardName as string,
         args.expiry as string,
         args.cvv as string
       );
-      sendToolResult(callId, "Card payment details filled.");
+      const before = useBalotoStore.getState().checkoutStep;
+      baloto.advanceCheckout();
+      const after = useBalotoStore.getState().checkoutStep;
+      const advanced = before !== after;
+      sendToolResult(callId, {
+        action: "submit_card_payment",
+        success: advanced,
+        message: advanced
+          ? `Card payment saved. Moved to "${after}" step.`
+          : `Card payment saved but could not advance — validation failed. Still on "${before}" step.`,
+      });
       break;
+    }
 
-    case "fill_paypal_payment":
+    case "submit_paypal_payment": {
+      baloto.setPaymentMethod("paypal" as PaymentMethod);
       baloto.setPaypalForm(args.email as string);
-      sendToolResult(callId, "PayPal email filled.");
+      const before = useBalotoStore.getState().checkoutStep;
+      baloto.advanceCheckout();
+      const after = useBalotoStore.getState().checkoutStep;
+      const advanced = before !== after;
+      sendToolResult(callId, {
+        action: "submit_paypal_payment",
+        success: advanced,
+        message: advanced
+          ? `PayPal payment saved. Moved to "${after}" step.`
+          : `PayPal payment saved but could not advance — validation failed. Still on "${before}" step.`,
+      });
+      break;
+    }
+
+    case "advance_checkout": {
+      const before = useBalotoStore.getState().checkoutStep;
+      baloto.advanceCheckout();
+      const after = useBalotoStore.getState().checkoutStep;
+      if (before === after) {
+        sendToolResult(callId, {
+          action: "advance_checkout",
+          success: false,
+          message: `Could not advance — blocked at "${before}" step (form may be incomplete or already at final step).`,
+        });
+      } else {
+        sendToolResult(callId, {
+          action: "advance_checkout",
+          success: true,
+          message: `Moved from "${before}" to "${after}".`,
+        });
+      }
+      break;
+    }
+
+    case "go_to_checkout_step":
+      baloto.goToCheckoutStep(args.step as CheckoutStep);
+      sendToolResult(callId, {
+        action: "go_to_checkout_step",
+        step: args.step,
+      });
       break;
 
-    case "select_payment_method":
-      baloto.setPaymentMethod(args.method as PaymentMethod);
-      sendToolResult(callId, `Payment method switched to ${args.method}.`);
-      break;
-
-    case "get_cart_state":
-      sendToolResult(callId, serializeCartState());
-      break;
-
-    case "trigger_jackpot_animation":
-      baloto.triggerJackpotRain(args.amount as string | undefined);
-      sendToolResult(callId, "Jackpot animation triggered.");
-      break;
-
-    case "get_current_info": {
-      const query = (args.query as string) ?? "general";
-      const result = await fetchBalotoInfo(query);
-      sendToolResult(callId, result);
+    case "transfer_to_sales": {
+      sendToolResultOnly(callId, {
+        action: "transfer_to_sales",
+        message: "Transferring back to Loto.",
+      });
+      switchToAgent("sales");
       break;
     }
 
     default:
       console.warn("[RealtimeClient] Unknown tool:", name);
-      sendToolResult(callId, `Unknown tool: ${name}`);
+      sendToolResult(callId, {
+        action: name,
+        error: `Unknown tool: ${name}`,
+      });
   }
 }
 
@@ -410,7 +597,7 @@ async function fetchBalotoInfo(query: string): Promise<string> {
     const json = await res.json();
 
     if (!json.success) {
-      return `Data retrieval failed: ${json.error}. Please use your general knowledge and inform the user you could not access live data.`;
+      return `Data retrieval failed: ${json.error}. Use your general knowledge and inform the user you could not access live data.`;
     }
 
     return `[Live data retrieved at ${json.timestamp}]\nQuery: ${query}\n\n${json.data}`;
@@ -422,9 +609,13 @@ async function fetchBalotoInfo(query: string): Promise<string> {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// Sends the function result back to the model, then triggers a response.
-// The two-event sequence is required by the Realtime API spec.
-function sendToolResult(callId: string, output: string) {
+// Sends the function result back to the model (as structured JSON with state
+// snapshot merged in), then triggers a response after a short delay to ensure
+// event ordering is respected by the Realtime API.
+function sendToolResult(callId: string, data: Record<string, unknown>) {
+  const snapshot = getStateSnapshot();
+  const output = JSON.stringify({ ...data, state: snapshot });
+
   sendEvent({
     type: "conversation.item.create",
     item: {
@@ -434,8 +625,28 @@ function sendToolResult(callId: string, output: string) {
     },
   });
 
-  // Ask the model to continue speaking based on the tool result
-  sendEvent({ type: "response.create" });
+  // Short delay ensures the function_call_output is fully processed before
+  // the model is asked to continue. switchToAgent calls send their own
+  // response.create, so transfer tools use sendToolResultOnly instead.
+  setTimeout(() => {
+    sendEvent({ type: "response.create" });
+  }, 150);
+}
+
+// Like sendToolResult but omits the response.create — used for transfer tools
+// where switchToAgent sends its own response.create with a handoff instruction.
+function sendToolResultOnly(callId: string, data: Record<string, unknown>) {
+  const snapshot = getStateSnapshot();
+  const output = JSON.stringify({ ...data, state: snapshot });
+
+  sendEvent({
+    type: "conversation.item.create",
+    item: {
+      type: "function_call_output",
+      call_id: callId,
+      output,
+    },
+  });
 }
 
 function sendEvent(event: Record<string, unknown>) {
@@ -447,20 +658,19 @@ function sendEvent(event: Record<string, unknown>) {
 // ─── Disconnect ───────────────────────────────────────────────────────────────
 
 export function disconnectAgent() {
-  storeUnsubscribe?.();
-  storeUnsubscribe = null;
-  if (cartPushTimer) {
-    clearTimeout(cartPushTimer);
-    cartPushTimer = null;
-  }
   stopAudioVisualization();
   dataChannel?.close();
   peerConnection?.close();
   if (audioElement) {
     audioElement.srcObject = null;
   }
+  if (audioContext) {
+    audioContext.close().catch(() => {});
+    audioContext = null;
+  }
   peerConnection = null;
   dataChannel = null;
   audioElement = null;
+  currentAgent = "sales";
   useAgentStore.getState().reset();
 }

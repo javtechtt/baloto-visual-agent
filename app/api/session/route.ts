@@ -22,9 +22,9 @@ export async function POST() {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4o-realtime-preview",
-      // Voice: 'alloy' | 'echo' | 'shimmer' | 'ash' | 'ballad' | 'coral' | 'sage' | 'verse'
-      // 'coral' is warm and conversational — good for a guide/assistant persona
+      model: "gpt-realtime-1.5",
+      // Initial voice — client overrides this per-agent via session.update.
+      // Sales agent (Loto): coral | Checkout agent (Karol): shimmer
       voice: "coral",
     }),
   });

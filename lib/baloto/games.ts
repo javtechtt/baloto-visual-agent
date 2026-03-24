@@ -22,7 +22,7 @@ export const GAMES: Record<GameId, BalotoGame> = {
   baloto: {
     id: "baloto",
     name: "Baloto",
-    tagline: "El juego que te cambia la vida",
+    tagline: "The game that changes your life",
     description:
       "Pick 5 numbers from 1–43 and 1 balotico from 1–16. Match all 6 to win the jackpot.",
     pickCount: 5,
@@ -178,3 +178,11 @@ export const ZODIAC_SIGNS = [
   "Leo", "Virgo", "Libra", "Scorpio",
   "Sagittarius", "Capricorn", "Aquarius", "Pisces",
 ];
+
+export const GAME_ICONS: Record<GameId, string> = {
+  baloto:     "🏆",   // cashpot / jackpot
+  revancha:   "💸",   // flying money — money-back + return
+  superastro: "🌠",   // shooting star
+  miloto:     "💰",   // money bag
+  colorloto:  "🎡",   // fortune wheel / color wheel
+};

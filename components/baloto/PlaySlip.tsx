@@ -52,7 +52,7 @@ export default function PlaySlip() {
   }
 
   function toggleBonus(n: number) {
-    if (activePlay.bonusNumber === n) {
+    if (activePlay?.bonusNumber === n) {
       clearActiveBonusNumber();
     } else {
       setActiveBonusNumber(n);
