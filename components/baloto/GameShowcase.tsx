@@ -217,7 +217,7 @@ function CarouselCard({ game }: { game: BalotoGame }) {
         >
           {game.name}
         </h3>
-        <p className="text-white/35 text-xs mt-1 leading-snug px-2">
+        <p className="text-white/50 text-xs mt-1 leading-snug px-2">
           {game.tagline}
         </p>
       </div>
@@ -249,7 +249,7 @@ function CarouselCard({ game }: { game: BalotoGame }) {
         <span className="text-sm font-bold" style={{ color: game.accentColor }}>
           ${game.price.toLocaleString()} COP
         </span>
-        <span className="text-white/28 text-xs">
+        <span className="text-white/50 text-xs">
           {game.drawDays.join(" · ")}
         </span>
       </div>

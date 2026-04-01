@@ -7,11 +7,11 @@ import GameGrid from "@/components/baloto/GameGrid";
 import PlaySlip from "@/components/baloto/PlaySlip";
 import CartPanel from "@/components/baloto/CartPanel";
 import CheckoutFlow from "@/components/baloto/CheckoutFlow";
+import { duration } from "@/lib/design/tokens";
 
 // The right-side panel. Routing logic:
-// • checkoutStep set   → CheckoutFlow (full panel)
-// • otherwise          → GameGrid + PlaySlip (if building) + CartPanel (if plays exist)
-// Content transitions smoothly as conversation state changes.
+// - checkoutStep set   -> CheckoutFlow (full panel)
+// - otherwise          -> GameGrid + PlaySlip (if building) + CartPanel (if plays exist)
 
 export default function AgentPanel() {
   const checkoutStep = useBalotoStore((s) => s.checkoutStep);
@@ -20,7 +20,7 @@ export default function AgentPanel() {
   const setPanelVisible = useBalotoStore((s) => s.setPanelVisible);
 
   return (
-    <div className="relative h-full flex flex-col">
+    <div className="relative h-full flex flex-col" role="region" aria-label={checkoutStep ? "Checkout" : "Game Center"}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <motion.div
@@ -28,14 +28,15 @@ export default function AgentPanel() {
           animate={{ opacity: 1 }}
           className="flex items-center gap-2"
         >
-          <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-          <span className="text-white/40 text-xs font-medium uppercase tracking-widest">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500" aria-hidden="true" />
+          <span className="text-white/50 text-xs font-medium uppercase tracking-widest">
             {checkoutStep ? "Checkout" : "Game Center"}
           </span>
         </motion.div>
         <button
           onClick={() => setPanelVisible(false)}
-          className="text-white/20 hover:text-white/50 transition-colors p-1"
+          className="text-white/30 hover:text-white/60 transition-colors p-1"
+          aria-label="Close panel"
         >
           <X size={14} />
         </button>
@@ -50,7 +51,7 @@ export default function AgentPanel() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: duration.normal }}
               className="h-full"
             >
               <CheckoutFlow />
@@ -66,17 +67,29 @@ export default function AgentPanel() {
               <GameGrid />
 
               <AnimatePresence>
-                {activePlay && (
+                {activePlay ? (
                   <motion.div
                     key="playslip"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: duration.normal }}
                   >
                     <PlaySlip />
                   </motion.div>
-                )}
+                ) : plays.length === 0 ? (
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-center py-6"
+                  >
+                    <p className="text-white/30 text-xs">
+                      Select a game above to start building your play
+                    </p>
+                  </motion.div>
+                ) : null}
               </AnimatePresence>
 
               <AnimatePresence>
@@ -86,7 +99,7 @@ export default function AgentPanel() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3, delay: 0.05 }}
+                    transition={{ duration: duration.normal, delay: 0.05 }}
                   >
                     <div className="border-t border-white/10 pt-5">
                       <CartPanel />

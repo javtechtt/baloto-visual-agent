@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, X } from "lucide-react";
 import { useBalotoStore } from "@/store/baloto.store";
 import { useAgentStore } from "@/store/agent.store";
+import { zIndex, easing, gradients } from "@/lib/design/tokens";
 
 export default function FloatingCartButton() {
   const plays = useBalotoStore((s) => s.plays);
@@ -24,16 +25,18 @@ export default function FloatingCartButton() {
 
   return (
     <motion.button
-      className="fixed z-[200] flex items-center justify-center rounded-full"
+      className="fixed flex items-center justify-center rounded-full"
+      aria-label={panelVisible ? "Close panel" : `Shopping cart${hasItems ? `, ${plays.length} ${plays.length === 1 ? "play" : "plays"}` : ""}`}
       style={{
         bottom: 32,
         right: 24,
         width: 56,
         height: 56,
+        zIndex: zIndex.floatingButton,
         background: panelVisible
           ? "rgba(255,255,255,0.08)"
           : hasItems
-          ? "linear-gradient(135deg, #ef4444, #b91c1c)"
+          ? gradients.primaryButton
           : "rgba(255,255,255,0.08)",
         boxShadow: panelVisible
           ? "0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)"
@@ -48,7 +51,7 @@ export default function FloatingCartButton() {
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0, opacity: 0 }}
-      transition={{ type: "spring", stiffness: 420, damping: 26 }}
+      transition={{ ...easing.springSnappy }}
     >
       <AnimatePresence mode="wait">
         {panelVisible ? (
@@ -82,7 +85,8 @@ export default function FloatingCartButton() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                  transition={{ ...easing.springSnappy }}
+                  aria-hidden="true"
                 >
                   {plays.length}
                 </motion.span>
@@ -96,6 +100,7 @@ export default function FloatingCartButton() {
       {hasItems && !panelVisible && (
         <motion.div
           className="absolute inset-0 rounded-full pointer-events-none"
+          aria-hidden="true"
           style={{ border: "2px solid rgba(239,68,68,0.5)" }}
           animate={{ scale: [1, 1.6, 1.6], opacity: [0.8, 0, 0] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}

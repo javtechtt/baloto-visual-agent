@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, Power } from "lucide-react";
 import { useAgentStore } from "@/store/agent.store";
@@ -8,6 +7,8 @@ import { useBalotoStore } from "@/store/baloto.store";
 import { connectAgent, disconnectAgent } from "@/lib/realtime/client";
 import AgentOrb from "@/components/agent/AgentOrb";
 import TranscriptBubble from "@/components/agent/TranscriptBubble";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { zIndex, gradients } from "@/lib/design/tokens";
 
 // AgentOrb renders at w-64 h-64 (256px). We clip it to a 90px container
 // by centering the 256px element via negative margins and overflow:hidden.
@@ -19,14 +20,7 @@ export default function AgentDock() {
   const status = useAgentStore((s) => s.status);
   const error = useAgentStore((s) => s.error);
   const panelVisible = useBalotoStore((s) => s.panelVisible);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+  const isMobile = useIsMobile();
 
   const isConnecting = status === "connecting";
   const isActive =
@@ -37,8 +31,10 @@ export default function AgentDock() {
 
   return (
     <div
-      className="fixed bottom-4 left-4 z-50 flex flex-col items-start gap-2"
-      style={{ maxWidth: 340 }}
+      className="fixed bottom-4 left-4 flex flex-col items-start gap-2"
+      style={{ maxWidth: 340, zIndex: zIndex.dock }}
+      role="region"
+      aria-label="Voice agent controls"
     >
       {/* Transcript floats above controls */}
       <TranscriptBubble />
@@ -50,6 +46,7 @@ export default function AgentDock() {
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
+            role="alert"
             className="text-red-400 text-xs px-3 py-1.5 rounded-lg"
             style={{
               background: "rgba(239,68,68,0.1)",
@@ -63,10 +60,11 @@ export default function AgentDock() {
 
       {/* Controls row: clipped orb + button */}
       <div className="flex items-center gap-3">
-        {/* Orb — clipped to 90×90, centered */}
+        {/* Orb — clipped to 90x90, centered */}
         <div
           className="flex-shrink-0 overflow-hidden rounded-full"
           style={{ width: ORB_CLIP, height: ORB_CLIP }}
+          aria-hidden="true"
         >
           <div
             style={{
@@ -86,9 +84,10 @@ export default function AgentDock() {
             <motion.button
               key="start"
               onClick={connectAgent}
+              aria-label={isConnecting ? "Connecting to voice agent" : "Start voice conversation with Loto"}
               className="flex items-center gap-2 px-5 py-3 rounded-full text-white font-medium text-sm tracking-wide"
               style={{
-                background: "linear-gradient(135deg, #ef4444, #b91c1c)",
+                background: gradients.primaryButton,
                 boxShadow: "0 0 20px rgba(239,68,68,0.4)",
               }}
               initial={{ opacity: 0, y: 10 }}
@@ -108,6 +107,7 @@ export default function AgentDock() {
             <motion.button
               key="stop"
               onClick={disconnectAgent}
+              aria-label="End voice session"
               className="flex items-center gap-2 px-4 py-2.5 rounded-full text-white/60 text-sm font-medium tracking-wide hover:text-white/90"
               style={{
                 background: "rgba(255,255,255,0.07)",
@@ -131,9 +131,10 @@ export default function AgentDock() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-1.5 text-xs text-white/30 tracking-widest uppercase"
+              className="flex items-center gap-1.5 text-xs text-white/40 tracking-widest uppercase"
+              aria-live="polite"
             >
-              <Mic size={10} />
+              <Mic size={10} aria-hidden="true" />
               <span>live</span>
             </motion.div>
           )}

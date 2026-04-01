@@ -226,8 +226,8 @@ function switchToAgent(type: AgentType) {
 
   const handoffInstruction =
     type === "checkout"
-      ? "You are now Karol. The checkout is open at the cart step. Read the cart from the state snapshot in the tool result. Introduce yourself in one sentence. List the plays and total, then ask 'Ready to proceed?' — one short question. The moment the customer says yes, call advance_checkout immediately — no second confirmation, no recap. Move fast."
-      : "You are Loto again. Welcome the customer back warmly in one sentence. Ask how you can help — they may want to explore games, ask questions, or add more plays.";
+      ? "You are now Karol. Continue in the language the customer has been using. The checkout is open at the cart step. The most recent tool result's state field contains the cart. Introduce yourself in one sentence. List the plays and total, then ask 'Ready to proceed?' — one short question. The moment the customer says yes, call advance_checkout immediately — no second confirmation, no recap. Move fast."
+      : "You are Loto again. Continue in the language the customer has been using. Welcome the customer back warmly in one sentence. Ask how you can help — they may want to explore games, ask questions, or add more plays.";
 
   // 500ms delay gives the Realtime API time to fully apply the session.update
   // (tools + instructions) before we trigger the first response as the new agent.
@@ -363,9 +363,8 @@ async function executeToolCall(
         break;
       }
 
-      // Validate range (digits: 0–max, numbers: 1–max)
-      const minVal =
-        gameId === "superastro" || gameId === "colorloto" ? 0 : 1;
+      // Validate range — min comes from game config (0 for digit games, 1 for number games)
+      const minVal = game.mainPoolMin ?? 1;
       const outOfRange = numbers.filter(
         (n) => n < minVal || n > game.mainPoolMax
       );
@@ -419,6 +418,24 @@ async function executeToolCall(
           error: "No active play to confirm. Call set_numbers first.",
         });
         break;
+      }
+      // Block incomplete plays — check via state snapshot logic
+      const game = GAMES[pending.gameId as GameId];
+      if (game) {
+        const currentCount = pending.numbers?.length ?? 0;
+        const missing: string[] = [];
+        if (currentCount < game.pickCount) missing.push(`${game.pickCount - currentCount} more main numbers`);
+        if (game.bonusPickCount && pending.bonusNumber === undefined) missing.push("bonus number (balotico)");
+        if (game.extraPick?.type === "zodiac" && !pending.zodiacSign) missing.push("zodiac sign");
+        if (game.extraPick?.type === "color" && !pending.color) missing.push("color");
+        if (missing.length > 0) {
+          sendToolResult(callId, {
+            action: "confirm_play",
+            success: false,
+            error: `Play is incomplete — still needs: ${missing.join(", ")}. Collect these from the user before confirming.`,
+          });
+          break;
+        }
       }
       baloto.confirmPlay();
       sendToolResult(callId, {
@@ -482,45 +499,96 @@ async function executeToolCall(
 
     // ── Checkout tools ────────────────────────────────────────────────────────
 
-    case "submit_details": {
-      baloto.setDetailsForm(
-        args.name as string,
-        args.email as string,
-        args.idNumber as string
-      );
-      const before = useBalotoStore.getState().checkoutStep;
-      baloto.advanceCheckout();
-      const after = useBalotoStore.getState().checkoutStep;
-      const advanced = before !== after;
+    case "fill_detail_field": {
+      const field = args.field as "name" | "email" | "idNumber";
+      const value = args.value as string;
+      baloto.updateDetailsField(field, value);
       sendToolResult(callId, {
-        action: "submit_details",
-        success: advanced,
-        message: advanced
-          ? `Details saved. Moved to "${after}" step.`
-          : `Details saved but could not advance — validation failed. Still on "${before}" step.`,
+        action: "fill_detail_field",
+        field,
+        value,
       });
       break;
     }
 
-    case "submit_card_payment": {
-      baloto.setPaymentMethod("card" as PaymentMethod);
-      baloto.setCardForm(
-        args.cardNumber as string,
-        args.cardName as string,
-        args.expiry as string,
-        args.cvv as string
-      );
+    case "fill_payment_field": {
+      const method = args.method as "card" | "paypal";
+      const field = args.field as string;
+      const value = args.value as string;
+      baloto.setPaymentMethod(method as PaymentMethod);
+      if (method === "card") {
+        baloto.updateCardField(field as "cardNumber" | "cardName" | "expiry" | "cvv", value);
+      } else {
+        baloto.updatePaypalEmail(value);
+      }
+      sendToolResult(callId, {
+        action: "fill_payment_field",
+        method,
+        field,
+        value,
+      });
+      break;
+    }
+
+    case "submit_details": {
+      const dName = (args.name as string) ?? "";
+      const dEmail = (args.email as string) ?? "";
+      const dId = (args.idNumber as string) ?? "";
+      baloto.setDetailsForm(dName, dEmail, dId);
       const before = useBalotoStore.getState().checkoutStep;
       baloto.advanceCheckout();
       const after = useBalotoStore.getState().checkoutStep;
       const advanced = before !== after;
-      sendToolResult(callId, {
-        action: "submit_card_payment",
-        success: advanced,
-        message: advanced
-          ? `Card payment saved. Moved to "${after}" step.`
-          : `Card payment saved but could not advance — validation failed. Still on "${before}" step.`,
-      });
+      if (!advanced) {
+        // Build field-level feedback so the model knows exactly what to ask for
+        const issues: string[] = [];
+        if (dName.trim().length <= 1) issues.push("name is too short");
+        if (!dEmail.includes("@")) issues.push("email is invalid (needs @)");
+        if (dId.trim().length < 6) issues.push("ID number needs at least 6 digits");
+        sendToolResult(callId, {
+          action: "submit_details",
+          success: false,
+          message: `Could not advance — ${issues.length > 0 ? issues.join(", ") : "validation failed"}. Still on "${before}" step.`,
+        });
+      } else {
+        sendToolResult(callId, {
+          action: "submit_details",
+          success: true,
+          message: `Details saved. Moved to "${after}" step.`,
+        });
+      }
+      break;
+    }
+
+    case "submit_card_payment": {
+      const cNum = (args.cardNumber as string) ?? "";
+      const cName = (args.cardName as string) ?? "";
+      const cExp = (args.expiry as string) ?? "";
+      const cCvv = (args.cvv as string) ?? "";
+      baloto.setPaymentMethod("card" as PaymentMethod);
+      baloto.setCardForm(cNum, cName, cExp, cCvv);
+      const before = useBalotoStore.getState().checkoutStep;
+      baloto.advanceCheckout();
+      const after = useBalotoStore.getState().checkoutStep;
+      const advanced = before !== after;
+      if (!advanced) {
+        const issues: string[] = [];
+        if (cNum.replace(/\s/g, "").length !== 16) issues.push("card number must be 16 digits");
+        if (cName.trim().length <= 1) issues.push("cardholder name is too short");
+        if (!/^\d{2}\/\d{2}$/.test(cExp)) issues.push("expiry must be MM/YY format");
+        if (cCvv.length < 3) issues.push("CVV must be 3-4 digits");
+        sendToolResult(callId, {
+          action: "submit_card_payment",
+          success: false,
+          message: `Could not advance — ${issues.length > 0 ? issues.join(", ") : "validation failed"}. Still on "${before}" step.`,
+        });
+      } else {
+        sendToolResult(callId, {
+          action: "submit_card_payment",
+          success: true,
+          message: `Card payment saved. Moved to "${after}" step.`,
+        });
+      }
       break;
     }
 

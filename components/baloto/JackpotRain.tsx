@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useMemo, useState } from "react";
 import { useBalotoStore, JackpotRainTrigger } from "@/store/baloto.store";
+import { zIndex } from "@/lib/design/tokens";
 
 // ─── Sound generation via Web Audio API ───────────────────────────────────────
 
@@ -125,7 +126,8 @@ function RainScene({ trigger }: { trigger: JackpotRainTrigger }) {
   return (
     <div
       className="fixed inset-0 pointer-events-none overflow-hidden"
-      style={{ zIndex: 9996 }}
+      aria-hidden="true"
+      style={{ zIndex: zIndex.effectJackpotRain }}
     >
       {/* Dark overlay to make things pop */}
       <motion.div

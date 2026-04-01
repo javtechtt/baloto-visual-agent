@@ -107,7 +107,8 @@ export default function CartPanel() {
                   </span>
                   <button
                     onClick={() => removePlay(play.id)}
-                    className="text-white/20 hover:text-white/60 transition-colors"
+                    className="text-white/30 hover:text-white/60 transition-colors"
+                    aria-label={`Remove ${game.name} play`}
                   >
                     <X size={12} />
                   </button>

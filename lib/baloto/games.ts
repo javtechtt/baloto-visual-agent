@@ -1,6 +1,21 @@
+// ─── Constants (must be defined before GAMES, which references them) ──────────
+
+export const ZODIAC_SIGNS = [
+  "Aries", "Taurus", "Gemini", "Cancer",
+  "Leo", "Virgo", "Libra", "Scorpio",
+  "Sagittarius", "Capricorn", "Aquarius", "Pisces",
+] as const;
+
+export const COLORLOTO_COLORS = ["Red", "Green", "Blue", "Yellow"] as const;
+
 // ─── Interactive games (playable through the UI) ──────────────────────────────
 
 export type GameId = "baloto" | "revancha" | "superastro" | "miloto" | "colorloto";
+
+export interface ExtraPick {
+  type: "zodiac" | "color";
+  options: readonly string[];
+}
 
 export interface BalotoGame {
   id: GameId;
@@ -8,9 +23,12 @@ export interface BalotoGame {
   tagline: string;
   description: string;
   pickCount: number;
+  mainPoolMin?: number; // 0 for digit games (superastro, colorloto), default 1
   mainPoolMax: number;
   bonusPickCount?: number;
   bonusPoolMax?: number;
+  extraPick?: ExtraPick; // additional selection (zodiac sign, color, etc.)
+  requiresBase?: GameId; // add-on game — reuses numbers from the base game
   drawDays: string[];
   price: number;
   color: string;
@@ -45,6 +63,7 @@ export const GAMES: Record<GameId, BalotoGame> = {
     mainPoolMax: 43,
     bonusPickCount: 1,
     bonusPoolMax: 16,
+    requiresBase: "baloto",
     drawDays: ["Wednesday", "Saturday"],
     price: 1500,
     color: "from-yellow-500 to-orange-600",
@@ -58,7 +77,9 @@ export const GAMES: Record<GameId, BalotoGame> = {
     description:
       "Pick 4 digits (0–9) and a zodiac sign. Draws happen every hour, every day.",
     pickCount: 4,
+    mainPoolMin: 0,
     mainPoolMax: 9,
+    extraPick: { type: "zodiac", options: ZODIAC_SIGNS },
     drawDays: ["Every day, every hour"],
     price: 1000,
     color: "from-purple-600 to-indigo-700",
@@ -86,7 +107,9 @@ export const GAMES: Record<GameId, BalotoGame> = {
     description:
       "Choose 4 digits (0–9 each) and a color. Fast-play format with daily draws.",
     pickCount: 4,
+    mainPoolMin: 0,
     mainPoolMax: 9,
+    extraPick: { type: "color", options: COLORLOTO_COLORS },
     drawDays: ["Every day"],
     price: 500,
     color: "from-emerald-500 to-green-600",
@@ -96,6 +119,7 @@ export const GAMES: Record<GameId, BalotoGame> = {
 };
 
 export const GAME_LIST = Object.values(GAMES);
+export const GAME_IDS = Object.keys(GAMES) as GameId[];
 
 // ─── Additional Baloto products (informational — not interactively playable in this UI) ──
 // Source of truth for the get_product_catalog tool result.
@@ -134,7 +158,10 @@ export const ADDITIONAL_PRODUCTS: BalotoProduct[] = [
   },
 ];
 
-export const COLORLOTO_COLORS = ["Red", "Green", "Blue", "Yellow"];
+// ─── Checkout flow steps (single source of truth) ────────────────────────────
+
+export const CHECKOUT_STEPS = ["cart", "details", "payment", "confirm", "success"] as const;
+export type CheckoutStep = (typeof CHECKOUT_STEPS)[number];
 
 // ─── Serializer used by the get_product_catalog tool handler ──────────────────
 // Returns a structured plain-text catalog injected directly into the model's context
@@ -166,18 +193,11 @@ export function serializeProductCatalog(): string {
     `${interactive}\n\n` +
     `Other Baloto products (direct user to baloto.com for full details):\n\n` +
     `${informational}\n\n` +
-    `Total products: ${GAME_LIST.length + ADDITIONAL_PRODUCTS.length}\n` +
-    `When listing games, include ALL of the above. Never omit any product.`
+    `Total products: ${GAME_LIST.length + ADDITIONAL_PRODUCTS.length}`
   );
 }
 
 // ─── Misc ──────────────────────────────────────────────────────────────────────
-
-export const ZODIAC_SIGNS = [
-  "Aries", "Taurus", "Gemini", "Cancer",
-  "Leo", "Virgo", "Libra", "Scorpio",
-  "Sagittarius", "Capricorn", "Aquarius", "Pisces",
-];
 
 export const GAME_ICONS: Record<GameId, string> = {
   baloto:     "🏆",   // cashpot / jackpot

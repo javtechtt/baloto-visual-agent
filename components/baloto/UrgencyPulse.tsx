@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useBalotoStore } from "@/store/baloto.store";
+import { zIndex } from "@/lib/design/tokens";
 
 const URGENCY_DELAY_MS = 60_000; // 1 minute at confirm before pulse starts
 
@@ -29,7 +30,8 @@ export default function UrgencyPulse() {
         <motion.div
           key="urgency"
           className="fixed inset-0 pointer-events-none"
-          style={{ zIndex: 150 }}
+          aria-hidden="true"
+          style={{ zIndex: zIndex.urgencyPulse }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

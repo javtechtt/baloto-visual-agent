@@ -62,7 +62,7 @@ export default function GameCard({ game, isSelected, index }: Props) {
         </div>
 
         {/* Tagline */}
-        <p className="text-white/40 text-xs mb-3 leading-snug">
+        <p className="text-white/50 text-xs mb-3 leading-snug">
           {game.tagline}
         </p>
 

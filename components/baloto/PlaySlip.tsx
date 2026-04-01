@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Delete } from "lucide-react";
 import { useBalotoStore } from "@/store/baloto.store";
 import { GAMES, ZODIAC_SIGNS, COLORLOTO_COLORS } from "@/lib/baloto/games";
+import { COLORLOTO_HEX } from "@/lib/design/tokens";
 import LotteryBall from "./LotteryBall";
 
 export default function PlaySlip() {
@@ -21,7 +22,7 @@ export default function PlaySlip() {
   const numbers = activePlay.numbers ?? [];
   const emptyMainSlots = Math.max(0, game.pickCount - numbers.length);
   const hasBonus = !!game.bonusPickCount;
-  const isDigitGame = activePlay.gameId === "superastro" || activePlay.gameId === "colorloto";
+  const isDigitGame = (game.mainPoolMin ?? 1) === 0;
   const mainFilled = numbers.length === game.pickCount;
   const isComplete =
     mainFilled &&
@@ -87,7 +88,7 @@ export default function PlaySlip() {
       {/* ── Selected numbers display ─────────────────────────────────────────── */}
 
       <div className="mb-3">
-        <p className="text-white/30 text-xs mb-2 uppercase tracking-wider">
+        <p className="text-white/50 text-xs mb-2 uppercase tracking-wider">
           {isDigitGame ? "Digits" : "Main Numbers"}
         </p>
         <div className="flex flex-wrap gap-2">
@@ -103,7 +104,7 @@ export default function PlaySlip() {
       {/* Bonus ball display */}
       {hasBonus && (
         <div className="mb-3">
-          <p className="text-white/30 text-xs mb-2 uppercase tracking-wider">Balotico</p>
+          <p className="text-white/50 text-xs mb-2 uppercase tracking-wider">Balotico</p>
           <div className="flex gap-2">
             {activePlay.bonusNumber !== undefined ? (
               <LotteryBall value={activePlay.bonusNumber} accentColor={game.accentColor} isBonus size="md" />
@@ -117,7 +118,7 @@ export default function PlaySlip() {
       {/* Zodiac sign — interactive */}
       {activePlay.gameId === "superastro" && (
         <div className="mb-3">
-          <p className="text-white/30 text-xs mb-2 uppercase tracking-wider">Zodiac Sign</p>
+          <p className="text-white/50 text-xs mb-2 uppercase tracking-wider">Zodiac Sign</p>
           <div className="flex flex-wrap gap-2">
             {ZODIAC_SIGNS.map((sign) => (
               <motion.button
@@ -143,13 +144,10 @@ export default function PlaySlip() {
       {/* Color picker — interactive */}
       {activePlay.gameId === "colorloto" && (
         <div className="mb-3">
-          <p className="text-white/30 text-xs mb-2 uppercase tracking-wider">Color</p>
+          <p className="text-white/50 text-xs mb-2 uppercase tracking-wider">Color</p>
           <div className="flex gap-2">
             {COLORLOTO_COLORS.map((color) => {
-              const colorMap: Record<string, string> = {
-                Red: "#ef4444", Green: "#22c55e", Blue: "#3b82f6", Yellow: "#eab308",
-              };
-              const hex = colorMap[color];
+              const hex = COLORLOTO_HEX[color];
               const isSelected = activePlay.color === color;
               return (
                 <motion.button
@@ -258,7 +256,7 @@ function MainNumberGrid({
 
   return (
     <div>
-      <p className="text-white/30 text-xs mb-2 uppercase tracking-wider">Select numbers</p>
+      <p className="text-white/50 text-xs mb-2 uppercase tracking-wider">Select numbers</p>
       <div className="flex flex-wrap gap-1.5">
         {Array.from({ length: poolMax }, (_, i) => i + 1).map((n) => {
           const selected = numbers.includes(n);
@@ -303,7 +301,7 @@ function BonusGrid({
 }) {
   return (
     <div className="mt-3">
-      <p className="text-white/30 text-xs mb-2 uppercase tracking-wider">Select balotico</p>
+      <p className="text-white/50 text-xs mb-2 uppercase tracking-wider">Select balotico</p>
       <div className="flex flex-wrap gap-1.5">
         {Array.from({ length: poolMax }, (_, i) => i + 1).map((n) => {
           const selected = bonusNumber === n;
@@ -351,7 +349,7 @@ function DigitPicker({
 
   return (
     <div>
-      <p className="text-white/30 text-xs mb-2 uppercase tracking-wider">
+      <p className="text-white/50 text-xs mb-2 uppercase tracking-wider">
         {full ? "All digits selected" : `Tap a digit (${count}/${max})`}
       </p>
       <div className="flex gap-1.5 flex-wrap">

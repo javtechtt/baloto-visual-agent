@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { useBalotoStore } from "@/store/baloto.store";
+import { zIndex } from "@/lib/design/tokens";
 
 const ZODIAC_SYMBOLS: Record<string, string> = {
   Aries:       "♈",
@@ -65,7 +66,8 @@ function ZodiacScene({ sign, color }: { sign: string; color: string }) {
   return (
     <div
       className="fixed inset-0 pointer-events-none overflow-hidden flex items-center justify-center"
-      style={{ zIndex: 9997 }}
+      aria-hidden="true"
+      style={{ zIndex: zIndex.effectZodiacFlash }}
     >
       {/* Dark backdrop with radial color glow */}
       <motion.div

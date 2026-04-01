@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { useBalotoStore } from "@/store/baloto.store";
 import { GAME_LIST, GAME_ICONS } from "@/lib/baloto/games";
+import { zIndex } from "@/lib/design/tokens";
 import ColorWheelSvg from "./ColorWheelSvg";
 
 const AUTO_CLEAR_MS = 3200;
@@ -30,7 +31,8 @@ export default function GameIconsFloat() {
       {gameIconsFloat && (
         <motion.div
           className="fixed inset-0 pointer-events-none overflow-hidden"
-          style={{ zIndex: 9990 }}
+          aria-hidden="true"
+          style={{ zIndex: zIndex.effectGameIcons }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

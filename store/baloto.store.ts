@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { GameId, GAMES } from "@/lib/baloto/games";
+import { GameId, GAMES, CHECKOUT_STEPS, type CheckoutStep } from "@/lib/baloto/games";
 
 export interface BallShowcaseEntry {
   id: string;
@@ -32,7 +32,7 @@ const COLORLOTO_HEX: Record<string, string> = {
   Yellow: "#eab308",
 };
 
-export type CheckoutStep = "cart" | "details" | "payment" | "confirm" | "success";
+export type { CheckoutStep };
 export type PaymentMethod = "card" | "paypal";
 
 interface PlayEntry {
@@ -259,23 +259,21 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
     set({ checkoutStep: "cart", panelVisible: true }),
 
   advanceCheckout: () => {
-    const steps: CheckoutStep[] = ["cart", "details", "payment", "confirm", "success"];
     const { checkoutStep, detailsReady, paymentReady } = get();
     if (!checkoutStep) return;
     if (checkoutStep === "details" && !detailsReady) return;
     if (checkoutStep === "payment" && !paymentReady) return;
-    const idx = steps.indexOf(checkoutStep);
-    if (idx < steps.length - 1) {
-      set({ checkoutStep: steps[idx + 1] });
+    const idx = CHECKOUT_STEPS.indexOf(checkoutStep);
+    if (idx < CHECKOUT_STEPS.length - 1) {
+      set({ checkoutStep: CHECKOUT_STEPS[idx + 1] });
     }
   },
 
   goBackCheckout: () => {
-    const steps: CheckoutStep[] = ["cart", "details", "payment", "confirm", "success"];
     const { checkoutStep } = get();
     if (!checkoutStep) return;
-    const idx = steps.indexOf(checkoutStep);
-    if (idx > 0) set({ checkoutStep: steps[idx - 1] });
+    const idx = CHECKOUT_STEPS.indexOf(checkoutStep);
+    if (idx > 0) set({ checkoutStep: CHECKOUT_STEPS[idx - 1] });
   },
 
   goToCheckoutStep: (step) => set({ checkoutStep: step, panelVisible: true }),

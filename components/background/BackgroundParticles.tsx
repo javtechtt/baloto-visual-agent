@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { zIndex } from "@/lib/design/tokens";
 
 // ─── Deterministic pseudo-random (no Math.random at render time → no SSR/hydration mismatch) ──
 
@@ -70,7 +71,7 @@ const BALLS: FloatingBall[] = Array.from({ length: 22 }, (_, i) => ({
 
 export default function BackgroundParticles() {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 2 }}>
+    <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: zIndex.backgroundParticles }} aria-hidden="true">
 
       {/* ── Floating lottery balls ─────────────────────────────────────────── */}
       {BALLS.map((ball) => {

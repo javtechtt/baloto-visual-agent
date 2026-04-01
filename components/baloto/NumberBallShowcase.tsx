@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useBalotoStore, BallShowcaseEntry } from "@/store/baloto.store";
+import { zIndex } from "@/lib/design/tokens";
 
 const BALL_SIZE = 72;
 
@@ -80,7 +81,7 @@ export default function NumberBallShowcase() {
   }, [ballQueue, panelVisible, clearBallQueue]);
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 9999 }}>
+    <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true" style={{ zIndex: zIndex.effectBallShowcase }}>
       {activeBalls.map((ball) => (
         <BallFly
           key={ball.id}

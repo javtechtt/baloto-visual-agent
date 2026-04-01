@@ -1,8 +1,9 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useBalotoStore } from "@/store/baloto.store";
+import { zIndex } from "@/lib/design/tokens";
 
 // 10 paint blobs — positions and sizes are seeded per render so they're stable
 const BLOB_CONFIGS = [
@@ -43,7 +44,7 @@ export default function ColorSplash() {
 
 function SplashScene({ color, label }: { color: string; label: string }) {
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 9998 }}>
+    <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true" style={{ zIndex: zIndex.effectColorSplash }}>
 
       {/* Full-screen flash — instantaneous flood then recedes */}
       <motion.div

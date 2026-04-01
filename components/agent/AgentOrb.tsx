@@ -3,29 +3,25 @@
 import { motion, useAnimationFrame } from "framer-motion";
 import { useRef, useMemo } from "react";
 import { useAgentStore, AgentStatus } from "@/store/agent.store";
+import { colors } from "@/lib/design/tokens";
 
 // Maps agent status to visual properties
 const STATUS_CONFIG: Record<
   AgentStatus,
   { color: string; glowColor: string; label: string }
 > = {
-  idle:       { color: "#1e293b", glowColor: "transparent",  label: "Start" },
-  connecting: { color: "#0ea5e9", glowColor: "#0ea5e920",    label: "Connecting..." },
-  listening:  { color: "#22c55e", glowColor: "#22c55e30",    label: "Listening" },
-  thinking:   { color: "#f59e0b", glowColor: "#f59e0b30",    label: "Thinking..." },
-  speaking:   { color: "#ef4444", glowColor: "#ef444430",    label: "Speaking" },
-  error:      { color: "#ef4444", glowColor: "#ef444440",    label: "Error" },
+  idle:       { color: "#1e293b", glowColor: "transparent",               label: "Start" },
+  connecting: { color: colors.info,    glowColor: `${colors.info}20`,     label: "Connecting..." },
+  listening:  { color: colors.success, glowColor: `${colors.success}30`,  label: "Listening" },
+  thinking:   { color: colors.warning, glowColor: `${colors.warning}30`,  label: "Thinking..." },
+  speaking:   { color: colors.primary, glowColor: `${colors.primary}30`,  label: "Speaking" },
+  error:      { color: colors.error,   glowColor: `${colors.error}40`,    label: "Error" },
 };
 
 export default function AgentOrb() {
   const status = useAgentStore((s) => s.status);
   const audioLevel = useAgentStore((s) => s.audioLevel);
   const config = STATUS_CONFIG[status];
-
-  // The orb has 3 layers:
-  // 1. Outer glow ring — pulses on audioLevel
-  // 2. Mid ring — slow rotation
-  // 3. Core sphere — scales slightly with audio
 
   const coreScale = 1 + audioLevel * 0.25;
   const glowScale = 1 + audioLevel * 0.5;
@@ -45,10 +41,15 @@ export default function AgentOrb() {
   );
 
   return (
-    <div className="relative flex items-center justify-center w-64 h-64">
+    <div
+      className="relative flex items-center justify-center w-64 h-64"
+      role="status"
+      aria-label={`Voice agent status: ${config.label}`}
+    >
       {/* Outer ambient glow */}
       <motion.div
         className="absolute rounded-full"
+        aria-hidden="true"
         style={{
           width: 240,
           height: 240,
@@ -66,6 +67,7 @@ export default function AgentOrb() {
       {/* Core orb */}
       <motion.div
         className="absolute rounded-full"
+        aria-hidden="true"
         style={{
           width: 140,
           height: 140,
@@ -86,6 +88,7 @@ export default function AgentOrb() {
       {/* Inner shimmer */}
       <motion.div
         className="absolute rounded-full"
+        aria-hidden="true"
         style={{ width: 80, height: 80 }}
         animate={{
           background:
@@ -109,6 +112,7 @@ export default function AgentOrb() {
             <motion.div
               key={p.id}
               className="absolute rounded-full pointer-events-none"
+              aria-hidden="true"
               style={{
                 width: p.size,
                 height: p.size,
@@ -140,6 +144,7 @@ export default function AgentOrb() {
         style={{ color: config.color }}
         animate={{ opacity: [0.6, 1, 0.6] }}
         transition={{ duration: 2, repeat: Infinity }}
+        aria-hidden="true"
       >
         {config.label}
       </motion.span>
@@ -152,11 +157,10 @@ export default function AgentOrb() {
 
 // Audio visualization bars — equalizer style, positioned below the orb
 function AudioBars({ audioLevel, color, active }: { audioLevel: number; color: string; active: boolean }) {
-  // Heights: middle bar tallest, tapers to sides — multiplied by audioLevel
   const baseHeights = [4, 8, 12, 18, 24, 18, 12, 8, 4];
 
   return (
-    <div className="absolute flex items-end gap-0.5" style={{ bottom: -68 }}>
+    <div className="absolute flex items-end gap-0.5" style={{ bottom: -68 }} aria-hidden="true">
       {baseHeights.map((base, i) => {
         const targetHeight = active ? base + audioLevel * 20 : 4;
         return (
@@ -188,6 +192,7 @@ function RotatingRing({ color, active }: { color: string; active: boolean }) {
     <div
       ref={ref}
       className="absolute rounded-full"
+      aria-hidden="true"
       style={{
         width: 180,
         height: 180,
