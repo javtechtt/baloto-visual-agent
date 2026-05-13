@@ -1,4 +1,3 @@
-// ─── Design tokens ───────────────────────────────────────────────────────────
 // Single source of truth for colors, z-index layers, animation presets,
 // and spacing constants. Every component imports from here instead of
 // hardcoding values.
@@ -7,8 +6,13 @@
 
 export const colors = {
   // Brand
-  primary: "#ef4444",
+  primary: "#ef4444",       // hot accent — used sparingly for highlights
   primaryDark: "#b91c1c",
+  brand: "#c91414",         // deeper, less neon — used on chrome / borders
+
+  // Hero accent (ordering scene only)
+  gold: "#d4a24a",
+  goldDim: "#9d7a36",
 
   // Semantic
   success: "#22c55e",
@@ -23,16 +27,23 @@ export const colors = {
   lotoBlue: "#3b82f6",
   lotoYellow: "#eab308",
 
-  // Neutrals (dark theme)
-  bgDeep: "#050508",
+  // Neutrals (ordering theme — warmer)
+  bgDeep: "#08070a",
   bgBase: "#0a0a0a",
-  bgElevated: "#0f0a1a",
+  bgElevated: "#15100a",
   surface: "rgba(255,255,255,0.04)",
   surfaceHover: "rgba(255,255,255,0.07)",
   surfaceBorder: "rgba(255,255,255,0.08)",
   surfaceBorderHover: "rgba(255,255,255,0.12)",
 
-  // Text
+  // Checkout palette (explicitly neutral, no warm cast)
+  checkoutBg: "#0e0d10",
+  checkoutSurface: "#17151a",
+  checkoutSurfaceHover: "#1d1b21",
+  checkoutBorder: "rgba(255,255,255,0.06)",
+  checkoutBorderHover: "rgba(255,255,255,0.12)",
+
+  // Text — warm ivory for ordering, cooler ink for checkout
   textPrimary: "#ffffff",
   textSecondary: "rgba(255,255,255,0.7)",
   textTertiary: "rgba(255,255,255,0.5)",
@@ -40,8 +51,10 @@ export const colors = {
   textSubtle: "rgba(255,255,255,0.3)",
   textFaint: "rgba(255,255,255,0.2)",
 
-  // Purple accent (used in background)
-  purple: "#8b5cf6",
+  ink: "#f4ecdf",
+  inkMuted: "rgba(244,236,223,0.62)",
+  inkSubtle: "rgba(244,236,223,0.38)",
+  inkFaint: "rgba(244,236,223,0.22)",
 } as const;
 
 // Colorloto color map — used by PlaySlip and ColorWheelSvg
@@ -90,6 +103,7 @@ export const duration = {
   slow: 0.5,
   panel: 0.5,
   carousel: 0.75,
+  scene: 0.22,
 } as const;
 
 // Common animation variants
@@ -130,5 +144,7 @@ export const breakpoints = {
 export const gradients = {
   primaryButton: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`,
   successButton: `linear-gradient(135deg, ${colors.success}, ${colors.successDark})`,
-  bgRadial: `radial-gradient(ellipse at center, ${colors.bgElevated} 0%, ${colors.bgDeep} 100%)`,
+  // Single warm radial — replaces the prior red/purple split
+  bgRadial: `radial-gradient(ellipse at 50% 35%, ${colors.bgElevated} 0%, ${colors.bgDeep} 70%)`,
+  // Checkout has a flat background — no gradient
 } as const;

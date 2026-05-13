@@ -10,7 +10,7 @@ import { zIndex } from "@/lib/design/tokens";
 function playCoinsSound() {
   try {
     const ctx = new AudioContext();
-    // Cascading coin arpeggio — 6 rapid pings
+    // Cascading coin arpeggio — 6 rapid pings, ~6dB quieter than before
     const freqs = [1046, 1319, 1568, 2093, 2637, 3136];
     freqs.forEach((freq, i) => {
       const osc = ctx.createOscillator();
@@ -21,7 +21,7 @@ function playCoinsSound() {
       osc.frequency.value = freq;
       const t = ctx.currentTime + i * 0.07;
       gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.35, t + 0.01);
+      gain.gain.linearRampToValueAtTime(0.18, t + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
       osc.start(t);
       osc.stop(t + 0.5);
@@ -34,7 +34,7 @@ function playCoinsSound() {
 function playDollarsSound() {
   try {
     const ctx = new AudioContext();
-    // Cash register "ka-ching" — two-tone bell hit
+    // Cash register "ka-ching" — two-tone bell hit, quieter
     [[1200, 0], [1800, 0.08]].forEach(([freq, delay]) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -43,7 +43,7 @@ function playDollarsSound() {
       osc.type = "triangle";
       osc.frequency.value = freq;
       const t = ctx.currentTime + delay;
-      gain.gain.setValueAtTime(0.5, t);
+      gain.gain.setValueAtTime(0.25, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
       osc.start(t);
       osc.stop(t + 1.0);
@@ -121,7 +121,8 @@ function RainScene({ trigger }: { trigger: JackpotRainTrigger }) {
     }
   }, [isCoins, soundFired]);
 
-  const items = useMemo(() => generateRainItems(28), []);
+  // Uniform 14 gold discs (down from 28 mixed coins+bills)
+  const items = useMemo(() => generateRainItems(14), []);
 
   return (
     <div
@@ -129,25 +130,19 @@ function RainScene({ trigger }: { trigger: JackpotRainTrigger }) {
       aria-hidden="true"
       style={{ zIndex: zIndex.effectJackpotRain }}
     >
-      {/* Dark overlay to make things pop */}
+      {/* Soft dark overlay — quieter than before */}
       <motion.div
         className="absolute inset-0"
-        style={{ background: "rgba(0,0,0,0.55)" }}
+        style={{ background: "rgba(0,0,0,0.42)" }}
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 1, 1, 0] }}
         transition={{ duration: AUTO_CLEAR_MS / 1000, times: [0, 0.06, 0.8, 1] }}
       />
 
-      {/* Rain items */}
-      {items.map((item) =>
-        isCoins ? (
-          <CoinItem key={item.id} item={item} />
-        ) : (
-          <DollarItem key={item.id} item={item} />
-        )
-      )}
+      {items.map((item) => (
+        <CoinItem key={item.id} item={item} />
+      ))}
 
-      {/* Central jackpot amount display */}
       <JackpotDisplay amount={trigger.amount} />
     </div>
   );
@@ -158,17 +153,16 @@ function RainScene({ trigger }: { trigger: JackpotRainTrigger }) {
 function CoinItem({ item }: { item: RainItem }) {
   return (
     <motion.div
-      className="absolute flex items-center justify-center rounded-full font-black select-none"
+      className="absolute rounded-full select-none"
       style={{
         left: `${item.x}%`,
         top: -item.size - 20,
         width: item.size,
         height: item.size,
-        background: "radial-gradient(circle at 35% 30%, #fde047, #ca8a04 55%, #92400e)",
-        border: "2px solid #fbbf24",
-        boxShadow: "0 0 12px rgba(251,191,36,0.7), inset 0 2px 4px rgba(255,255,255,0.4)",
-        fontSize: item.size * 0.45,
-        color: "#92400e",
+        // Uniform metallic gold disc — no glyph, no neon glow
+        background: "radial-gradient(circle at 35% 30%, #f5d782 0%, #d4a24a 55%, #8e6420 100%)",
+        border: "1px solid rgba(212,162,74,0.7)",
+        boxShadow: "0 0 8px rgba(212,162,74,0.45), inset 0 1px 2px rgba(255,255,255,0.25)",
       }}
       initial={{ y: 0, x: 0, rotate: 0, opacity: 1 }}
       animate={{
@@ -183,50 +177,7 @@ function CoinItem({ item }: { item: RainItem }) {
         ease: "easeIn",
         opacity: { times: [0, 0.6, 0.85, 1], duration: item.duration, delay: item.delay },
       }}
-    >
-      $
-    </motion.div>
-  );
-}
-
-// ─── Dollar bill item ─────────────────────────────────────────────────────────
-
-function DollarItem({ item }: { item: RainItem }) {
-  const w = item.size * 1.8;
-  const h = item.size * 0.9;
-  return (
-    <motion.div
-      className="absolute flex items-center justify-center select-none"
-      style={{
-        left: `${item.x}%`,
-        top: -h - 20,
-        width: w,
-        height: h,
-        background: "linear-gradient(135deg, #15803d 0%, #16a34a 40%, #14532d 100%)",
-        border: "1.5px solid #22c55e",
-        borderRadius: 4,
-        boxShadow: "0 0 14px rgba(34,197,94,0.6), inset 0 1px 3px rgba(255,255,255,0.2)",
-        fontSize: h * 0.55,
-        fontWeight: 900,
-        color: "#bbf7d0",
-        fontFamily: "serif",
-      }}
-      initial={{ y: 0, x: 0, rotate: 0, opacity: 1 }}
-      animate={{
-        y: typeof window !== "undefined" ? window.innerHeight + h + 40 : 900,
-        x: item.wobble,
-        rotate: item.spin * 0.4,
-        opacity: [1, 1, 1, 0],
-      }}
-      transition={{
-        duration: item.duration,
-        delay: item.delay,
-        ease: "easeIn",
-        opacity: { times: [0, 0.6, 0.85, 1], duration: item.duration, delay: item.delay },
-      }}
-    >
-      $
-    </motion.div>
+    />
   );
 }
 
@@ -254,20 +205,20 @@ function JackpotDisplay({ amount }: { amount?: string }) {
         🏆
       </motion.div>
 
-      {/* Amount or fallback */}
+      {/* Amount or fallback — gold ink instead of neon yellow */}
       <motion.div
         className="text-center font-black uppercase tracking-tight"
         style={{
           fontSize: amount
-            ? "clamp(40px, 10vw, 120px)"
-            : "clamp(48px, 12vw, 140px)",
-          color: "#fde047",
+            ? "clamp(36px, 8vw, 96px)"
+            : "clamp(40px, 9.5vw, 112px)",
+          color: "#d4a24a",
           textShadow:
-            "0 0 40px rgba(253,224,71,0.9), 0 0 80px rgba(253,224,71,0.5), 0 4px 20px rgba(0,0,0,0.8)",
+            "0 0 28px rgba(212,162,74,0.55), 0 4px 16px rgba(0,0,0,0.7)",
           lineHeight: 1.05,
         }}
         initial={{ scale: 0.2, y: 30 }}
-        animate={{ scale: [0.2, 1.15, 1.0], y: [30, -6, 0] }}
+        animate={{ scale: [0.2, 1.12, 1.0], y: [30, -6, 0] }}
         transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1.15, 0.36, 1] }}
       >
         {amount ?? "WIN BIG!"}
@@ -275,11 +226,11 @@ function JackpotDisplay({ amount }: { amount?: string }) {
 
       {/* Subtext */}
       <motion.div
-        className="font-bold uppercase tracking-[0.3em]"
+        className="font-medium uppercase tracking-[0.3em]"
         style={{
-          fontSize: "clamp(14px, 2.5vmin, 28px)",
-          color: "rgba(255,255,255,0.85)",
-          textShadow: "0 0 20px rgba(253,224,71,0.4), 0 2px 10px rgba(0,0,0,0.9)",
+          fontSize: "clamp(12px, 2vmin, 22px)",
+          color: "rgba(244,236,223,0.7)",
+          textShadow: "0 2px 10px rgba(0,0,0,0.7)",
         }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -123,15 +123,15 @@ function BallFly({ ball, onDone }: { ball: FlyingBall; onDone: () => void }) {
       animate={{
         x:     [x0, x1, x2,  x3,   x4,  x5],
         y:     [y0, y1, y2,  y3,   y4,  y5],
-        scale: [0,  2,  5.5, 5.2,  5.4, 0],
+        scale: [0,  1.6, 3.8, 3.6, 3.7, 0],
         opacity:[0,  1,  1,   1,    1,   0],
         rotate:[0, -120, -300, -340, -380, -600],
         boxShadow: [
           `0 0 0px ${ball.color}00`,
-          `0 0 50px ${ball.color}, 0 0 100px ${ball.color}70`,
-          `0 0 100px ${ball.color}, 0 0 200px ${ball.color}90, 0 0 300px ${ball.color}40`,
-          `0 0 100px ${ball.color}, 0 0 200px ${ball.color}90, 0 0 300px ${ball.color}40`,
-          `0 0 80px ${ball.color},  0 0 150px ${ball.color}70`,
+          `0 0 30px ${ball.color}, 0 0 60px ${ball.color}60`,
+          `0 0 60px ${ball.color}, 0 0 120px ${ball.color}70, 0 0 180px ${ball.color}30`,
+          `0 0 60px ${ball.color}, 0 0 120px ${ball.color}70, 0 0 180px ${ball.color}30`,
+          `0 0 45px ${ball.color}, 0 0 90px ${ball.color}50`,
           `0 0 0px ${ball.color}00`,
         ],
       }}

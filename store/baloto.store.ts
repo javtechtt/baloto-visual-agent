@@ -102,6 +102,7 @@ interface BalotoStore {
   clearGameIconsFloat: () => void;
   setShowcasedGame: (gameId: GameId | null) => void;
   openCheckout: () => void;
+  closeCheckout: () => void;
   advanceCheckout: () => void;
   goBackCheckout: () => void;
   goToCheckoutStep: (step: CheckoutStep) => void;
@@ -257,6 +258,9 @@ export const useBalotoStore = create<BalotoStore>((set, get) => ({
 
   openCheckout: () =>
     set({ checkoutStep: "cart", panelVisible: true }),
+
+  closeCheckout: () =>
+    set({ checkoutStep: null, panelVisible: true }),
 
   advanceCheckout: () => {
     const { checkoutStep, detailsReady, paymentReady } = get();

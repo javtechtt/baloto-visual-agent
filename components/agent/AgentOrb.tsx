@@ -1,21 +1,24 @@
 "use client";
 
 import { motion, useAnimationFrame } from "framer-motion";
-import { useRef, useMemo } from "react";
+import { useRef } from "react";
 import { useAgentStore, AgentStatus } from "@/store/agent.store";
 import { colors } from "@/lib/design/tokens";
 
-// Maps agent status to visual properties
+// Three layers: outer glow + thin outer ring + core. Status drives color
+// and motion. No sparkles, no inner shimmer, no audio bars — those lived
+// outside the dock's clip zone and added animation cost for no visible gain.
+
 const STATUS_CONFIG: Record<
   AgentStatus,
   { color: string; glowColor: string; label: string }
 > = {
-  idle:       { color: "#1e293b", glowColor: "transparent",               label: "Start" },
-  connecting: { color: colors.info,    glowColor: `${colors.info}20`,     label: "Connecting..." },
-  listening:  { color: colors.success, glowColor: `${colors.success}30`,  label: "Listening" },
-  thinking:   { color: colors.warning, glowColor: `${colors.warning}30`,  label: "Thinking..." },
-  speaking:   { color: colors.primary, glowColor: `${colors.primary}30`,  label: "Speaking" },
-  error:      { color: colors.error,   glowColor: `${colors.error}40`,    label: "Error" },
+  idle:       { color: "#1e293b",      glowColor: "transparent",          label: "Start" },
+  connecting: { color: colors.info,    glowColor: `${colors.info}18`,     label: "Connecting" },
+  listening:  { color: colors.success, glowColor: `${colors.success}22`,  label: "Listening" },
+  thinking:   { color: colors.warning, glowColor: `${colors.warning}22`,  label: "Thinking" },
+  speaking:   { color: colors.primary, glowColor: `${colors.primary}22`,  label: "Speaking" },
+  error:      { color: colors.error,   glowColor: `${colors.error}30`,    label: "Error" },
 };
 
 export default function AgentOrb() {
@@ -23,22 +26,8 @@ export default function AgentOrb() {
   const audioLevel = useAgentStore((s) => s.audioLevel);
   const config = STATUS_CONFIG[status];
 
-  const coreScale = 1 + audioLevel * 0.25;
-  const glowScale = 1 + audioLevel * 0.5;
-
-  // Stable particle positions — generated once per mount
-  const particles = useMemo(
-    () =>
-      Array.from({ length: 12 }, (_, i) => ({
-        id: i,
-        angle: (i / 12) * 360,
-        radius: 90 + Math.random() * 30,
-        size: 2 + Math.random() * 3,
-        delay: Math.random() * 1.5,
-        duration: 1.2 + Math.random() * 1,
-      })),
-    []
-  );
+  const coreScale = 1 + audioLevel * 0.22;
+  const glowScale = 1 + audioLevel * 0.4;
 
   return (
     <div
@@ -46,7 +35,7 @@ export default function AgentOrb() {
       role="status"
       aria-label={`Voice agent status: ${config.label}`}
     >
-      {/* Outer ambient glow */}
+      {/* Outer ambient glow — slightly dimmer than before */}
       <motion.div
         className="absolute rounded-full"
         aria-hidden="true"
@@ -59,9 +48,9 @@ export default function AgentOrb() {
         transition={{ duration: 0.4, repeat: status === "speaking" ? Infinity : 0 }}
       />
 
-      {/* Rotating ring — visible when active */}
+      {/* Thin outer ring — solid line, rotates only when actively speaking */}
       {status !== "idle" && (
-        <RotatingRing color={config.color} active={status !== "error"} />
+        <RotatingRing color={config.color} active={status === "speaking"} />
       )}
 
       {/* Core orb */}
@@ -72,119 +61,36 @@ export default function AgentOrb() {
           width: 140,
           height: 140,
           background: `radial-gradient(circle at 35% 35%, ${config.color}cc, ${config.color}66 50%, ${config.color}22)`,
-          boxShadow: `0 0 40px ${config.glowColor}, 0 0 80px ${config.glowColor}`,
-          border: `1px solid ${config.color}44`,
+          boxShadow: `0 0 32px ${config.glowColor}`,
+          border: `1px solid ${config.color}33`,
         }}
         animate={{
-          scale: status === "speaking" ? coreScale : status === "listening" ? [1, 1.04, 1] : 1,
+          scale:
+            status === "speaking"
+              ? coreScale
+              : status === "listening"
+              ? [1, 1.035, 1]
+              : 1,
         }}
         transition={{
-          duration: status === "speaking" ? 0.15 : 2,
-          repeat: status === "listening" ? Infinity : status === "speaking" ? Infinity : 0,
+          duration: status === "speaking" ? 0.15 : 2.4,
+          repeat: status === "listening" || status === "speaking" ? Infinity : 0,
           ease: "easeInOut",
         }}
       />
-
-      {/* Inner shimmer */}
-      <motion.div
-        className="absolute rounded-full"
-        aria-hidden="true"
-        style={{ width: 80, height: 80 }}
-        animate={{
-          background:
-            status === "thinking"
-              ? [
-                  `radial-gradient(circle, ${config.color}88, transparent)`,
-                  `radial-gradient(circle, ${config.color}cc, transparent)`,
-                  `radial-gradient(circle, ${config.color}88, transparent)`,
-                ]
-              : `radial-gradient(circle, ${config.color}66, transparent)`,
-        }}
-        transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      {/* Sparkle particles — only when speaking */}
-      {status === "speaking" &&
-        particles.map((p) => {
-          const x = Math.cos((p.angle * Math.PI) / 180) * p.radius;
-          const y = Math.sin((p.angle * Math.PI) / 180) * p.radius;
-          return (
-            <motion.div
-              key={p.id}
-              className="absolute rounded-full pointer-events-none"
-              aria-hidden="true"
-              style={{
-                width: p.size,
-                height: p.size,
-                background: config.color,
-                left: "50%",
-                top: "50%",
-                marginLeft: -p.size / 2,
-                marginTop: -p.size / 2,
-              }}
-              animate={{
-                x: [0, x * 0.6, x],
-                y: [0, y * 0.6, y],
-                opacity: [0, 1, 0],
-                scale: [0, 1.2, 0],
-              }}
-              transition={{
-                duration: p.duration,
-                delay: p.delay,
-                repeat: Infinity,
-                ease: "easeOut",
-              }}
-            />
-          );
-        })}
-
-      {/* Status label */}
-      <motion.span
-        className="absolute -bottom-8 text-xs font-medium tracking-widest uppercase"
-        style={{ color: config.color }}
-        animate={{ opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 2, repeat: Infinity }}
-        aria-hidden="true"
-      >
-        {config.label}
-      </motion.span>
-
-      {/* Audio visualization bars — below the orb */}
-      <AudioBars audioLevel={audioLevel} color={config.color} active={status === "speaking" || status === "listening"} />
     </div>
   );
 }
 
-// Audio visualization bars — equalizer style, positioned below the orb
-function AudioBars({ audioLevel, color, active }: { audioLevel: number; color: string; active: boolean }) {
-  const baseHeights = [4, 8, 12, 18, 24, 18, 12, 8, 4];
-
-  return (
-    <div className="absolute flex items-end gap-0.5" style={{ bottom: -68 }} aria-hidden="true">
-      {baseHeights.map((base, i) => {
-        const targetHeight = active ? base + audioLevel * 20 : 4;
-        return (
-          <motion.div
-            key={i}
-            className="rounded-full"
-            style={{ width: 3, background: color, opacity: active ? 0.7 : 0.15 }}
-            animate={{ height: targetHeight }}
-            transition={{ duration: 0.12, ease: "easeOut", delay: i * 0.01 }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-// Rotating dashed ring — shows activity
+// Thin solid ring that rotates only when speaking. Otherwise it sits static
+// as a quiet outline around the orb.
 function RotatingRing({ color, active }: { color: string; active: boolean }) {
   const rotation = useRef(0);
   const ref = useRef<HTMLDivElement>(null);
 
   useAnimationFrame((_, delta) => {
     if (!active || !ref.current) return;
-    rotation.current += delta * 0.05;
+    rotation.current += delta * 0.04;
     ref.current.style.transform = `rotate(${rotation.current}deg)`;
   });
 
@@ -196,8 +102,7 @@ function RotatingRing({ color, active }: { color: string; active: boolean }) {
       style={{
         width: 180,
         height: 180,
-        border: `1px dashed ${color}55`,
-        boxShadow: `inset 0 0 20px ${color}11`,
+        border: `1px solid ${color}44`,
       }}
     />
   );

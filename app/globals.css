@@ -1,11 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #08070a;
+  --foreground: #f4ecdf;
   --primary: #ef4444;
   --primary-dark: #b91c1c;
+  --brand: #c91414;
+  --gold: #d4a24a;
+  --gold-dim: #9d7a36;
+  --ink: #f4ecdf;
+  --ink-muted: rgba(244, 236, 223, 0.62);
+  --ink-subtle: rgba(244, 236, 223, 0.38);
   --success: #22c55e;
+  --checkout-bg: #0e0d10;
+  --checkout-surface: #17151a;
+  --checkout-border: rgba(255, 255, 255, 0.06);
 }
 
 @theme inline {
@@ -18,7 +27,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
 /* ─── Focus-visible — accessible keyboard focus indicator ───────────────────── */
@@ -29,30 +38,35 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [role="button"]:focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
 
-/* ─── Form inputs — replaces 7+ inline style={} blocks ──────────────────────── */
+/* ─── Form inputs (neutral, used in checkout) ───────────────────────────────── */
 
 .form-input {
   width: 100%;
   border-radius: 0.75rem;
   padding: 0.625rem 0.75rem;
   font-size: 0.875rem;
-  color: white;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--checkout-border);
   outline: none;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
 }
 
 .form-input::placeholder {
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--ink-subtle);
+}
+
+.form-input:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .form-input:focus-visible {
-  border-color: rgba(239, 68, 68, 0.5);
+  border-color: var(--brand);
+  background: rgba(255, 255, 255, 0.05);
   outline: none;
 }
 

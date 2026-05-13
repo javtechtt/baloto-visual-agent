@@ -8,15 +8,20 @@ import { connectAgent, disconnectAgent } from "@/lib/realtime/client";
 import AgentOrb from "@/components/agent/AgentOrb";
 import TranscriptBubble from "@/components/agent/TranscriptBubble";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { zIndex, gradients } from "@/lib/design/tokens";
+import { zIndex, gradients, colors } from "@/lib/design/tokens";
 
-// AgentOrb renders at w-64 h-64 (256px). We clip it to a 90px container
-// by centering the 256px element via negative margins and overflow:hidden.
-const ORB_CLIP = 90;
+// Orb intrinsic size — used to derive the negative-margin clip math for both variants
 const ORB_FULL = 256;
-const ORB_MARGIN = (ORB_CLIP - ORB_FULL) / 2; // -83
 
-export default function AgentDock() {
+// Per-variant clip sizes
+const FULL_CLIP = 90;
+const COMPACT_CLIP = 36;
+
+interface AgentDockProps {
+  variant?: "full" | "compact";
+}
+
+export default function AgentDock({ variant = "full" }: AgentDockProps) {
   const status = useAgentStore((s) => s.status);
   const error = useAgentStore((s) => s.error);
   const panelVisible = useBalotoStore((s) => s.panelVisible);
@@ -26,8 +31,14 @@ export default function AgentDock() {
   const isActive =
     status !== "idle" && status !== "error" && status !== "connecting";
 
-  // On mobile with panel open, hide dock — bottom sheet covers it
-  if (isMobile && panelVisible) return null;
+  // Full variant hides itself on mobile when the panel sheet is open
+  if (variant === "full" && isMobile && panelVisible) return null;
+
+  if (variant === "compact") return <CompactDock isActive={isActive} isConnecting={isConnecting} />;
+
+  // ── Full variant (ordering scene, bottom-left) ────────────────────────────
+  const clip = FULL_CLIP;
+  const margin = (clip - ORB_FULL) / 2;
 
   return (
     <div
@@ -36,10 +47,8 @@ export default function AgentDock() {
       role="region"
       aria-label="Voice agent controls"
     >
-      {/* Transcript floats above controls */}
       <TranscriptBubble />
 
-      {/* Error */}
       <AnimatePresence>
         {error && (
           <motion.p
@@ -47,8 +56,9 @@ export default function AgentDock() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             role="alert"
-            className="text-red-400 text-xs px-3 py-1.5 rounded-lg"
+            className="text-xs px-3 py-1.5 rounded-lg"
             style={{
+              color: colors.primary,
               background: "rgba(239,68,68,0.1)",
               border: "1px solid rgba(239,68,68,0.2)",
             }}
@@ -58,27 +68,24 @@ export default function AgentDock() {
         )}
       </AnimatePresence>
 
-      {/* Controls row: clipped orb + button */}
       <div className="flex items-center gap-3">
-        {/* Orb — clipped to 90x90, centered */}
         <div
           className="flex-shrink-0 overflow-hidden rounded-full"
-          style={{ width: ORB_CLIP, height: ORB_CLIP }}
+          style={{ width: clip, height: clip }}
           aria-hidden="true"
         >
           <div
             style={{
               width: ORB_FULL,
               height: ORB_FULL,
-              marginLeft: ORB_MARGIN,
-              marginTop: ORB_MARGIN,
+              marginLeft: margin,
+              marginTop: margin,
             }}
           >
             <AgentOrb />
           </div>
         </div>
 
-        {/* Talk / End button */}
         <AnimatePresence mode="wait">
           {!isActive ? (
             <motion.button
@@ -93,10 +100,7 @@ export default function AgentDock() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              whileHover={{
-                scale: 1.05,
-                boxShadow: "0 0 35px rgba(239,68,68,0.6)",
-              }}
+              whileHover={{ scale: 1.05, boxShadow: "0 0 35px rgba(239,68,68,0.6)" }}
               whileTap={{ scale: 0.97 }}
               disabled={isConnecting}
             >
@@ -108,10 +112,11 @@ export default function AgentDock() {
               key="stop"
               onClick={disconnectAgent}
               aria-label="End voice session"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-full text-white/60 text-sm font-medium tracking-wide hover:text-white/90"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium tracking-wide"
               style={{
+                color: colors.textSecondary,
                 background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(255,255,255,0.12)",
+                border: `1px solid ${colors.surfaceBorderHover}`,
               }}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -124,14 +129,14 @@ export default function AgentDock() {
           )}
         </AnimatePresence>
 
-        {/* Live indicator */}
         <AnimatePresence>
           {isActive && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-1.5 text-xs text-white/40 tracking-widest uppercase"
+              className="flex items-center gap-1.5 text-xs tracking-widest uppercase"
+              style={{ color: colors.textMuted }}
               aria-live="polite"
             >
               <Mic size={10} aria-hidden="true" />
@@ -140,6 +145,67 @@ export default function AgentDock() {
           )}
         </AnimatePresence>
       </div>
+    </div>
+  );
+}
+
+// ─── Compact dock (used by CheckoutScene's top bar) ──────────────────────────
+
+function CompactDock({ isActive, isConnecting }: { isActive: boolean; isConnecting: boolean }) {
+  const clip = COMPACT_CLIP;
+  const margin = (clip - ORB_FULL) / 2;
+
+  return (
+    <div className="flex items-center gap-2" role="region" aria-label="Voice agent">
+      <div
+        className="flex-shrink-0 overflow-hidden rounded-full"
+        style={{ width: clip, height: clip }}
+        aria-hidden="true"
+      >
+        <div
+          style={{
+            width: ORB_FULL,
+            height: ORB_FULL,
+            marginLeft: margin,
+            marginTop: margin,
+          }}
+        >
+          <AgentOrb />
+        </div>
+      </div>
+
+      {!isActive ? (
+        <button
+          onClick={connectAgent}
+          aria-label={isConnecting ? "Connecting" : "Talk to Karol"}
+          disabled={isConnecting}
+          className="flex items-center justify-center rounded-full transition-colors"
+          style={{
+            width: 32,
+            height: 32,
+            background: "rgba(255,255,255,0.04)",
+            border: `1px solid ${colors.checkoutBorder}`,
+            color: colors.inkMuted,
+          }}
+        >
+          <Mic size={13} aria-hidden="true" />
+        </button>
+      ) : (
+        <button
+          onClick={disconnectAgent}
+          aria-label="End voice session"
+          className="flex items-center justify-center rounded-full transition-colors"
+          style={{
+            width: 32,
+            height: 32,
+            background: "rgba(255,255,255,0.04)",
+            border: `1px solid ${colors.checkoutBorder}`,
+            color: colors.inkMuted,
+          }}
+        >
+          <Power size={13} aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 }

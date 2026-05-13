@@ -37,22 +37,22 @@ export default function UrgencyPulse() {
           exit={{ opacity: 0 }}
           transition={{ duration: 1.5 }}
         >
-          {/* Soft red vignette on all edges — pulses gently */}
+          {/* Quiet warm vignette — toned down for the polished checkout scene */}
           <motion.div
             className="absolute inset-0"
             style={{
-              boxShadow: "inset 0 0 90px 30px rgba(220, 38, 38, 0.28)",
+              boxShadow: "inset 0 0 80px 20px rgba(212,162,74,0.12)",
               borderRadius: 0,
             }}
             animate={{
               boxShadow: [
-                "inset 0 0 90px 30px rgba(220,38,38,0.18)",
-                "inset 0 0 120px 50px rgba(220,38,38,0.35)",
-                "inset 0 0 90px 30px rgba(220,38,38,0.18)",
+                "inset 0 0 80px 20px rgba(212,162,74,0.10)",
+                "inset 0 0 110px 36px rgba(212,162,74,0.22)",
+                "inset 0 0 80px 20px rgba(212,162,74,0.10)",
               ],
             }}
             transition={{
-              duration: 2.8,
+              duration: 3.6,
               repeat: Infinity,
               ease: "easeInOut",
             }}

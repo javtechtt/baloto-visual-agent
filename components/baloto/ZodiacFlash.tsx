@@ -20,10 +20,10 @@ const ZODIAC_SYMBOLS: Record<string, string> = {
   Pisces:      "♓",
 };
 
-// Total duration: 0.7s entrance + 3s hold + 0.9s exit = 4.6s
-const ENTRANCE_MS  = 700;
-const HOLD_MS      = 3000;
-const EXIT_MS      = 900;
+// Total duration: 0.5s entrance + 2s hold + 0.7s exit = 3.2s (down from 4.6s)
+const ENTRANCE_MS  = 500;
+const HOLD_MS      = 2000;
+const EXIT_MS      = 700;
 const TOTAL_MS     = ENTRANCE_MS + HOLD_MS + EXIT_MS;
 
 export default function ZodiacFlash() {
@@ -80,15 +80,15 @@ function ZodiacScene({ sign, color }: { sign: string; color: string }) {
         transition={{ duration: TOTAL_MS / 1000, times: [t0, t1, t2, t3], ease: "easeInOut" }}
       />
 
-      {/* Outer glow ring — expands slowly during hold */}
+      {/* Outer glow ring — expands during hold, smaller max than before */}
       <motion.div
         className="absolute rounded-full"
-        style={{ border: `2px solid ${color}`, boxShadow: `0 0 80px ${color}60` }}
+        style={{ border: `1.5px solid ${color}`, boxShadow: `0 0 50px ${color}50` }}
         initial={{ width: "20vmin", height: "20vmin", opacity: 0 }}
         animate={{
-          width:   ["20vmin",  "90vmin",  "110vmin", "200vmin"],
-          height:  ["20vmin",  "90vmin",  "110vmin", "200vmin"],
-          opacity: [0,         0.6,       0.4,       0],
+          width:   ["20vmin",  "70vmin",  "90vmin",  "140vmin"],
+          height:  ["20vmin",  "70vmin",  "90vmin",  "140vmin"],
+          opacity: [0,         0.5,       0.32,      0],
         }}
         transition={{ duration: TOTAL_MS / 1000, times: [t0, t1, t2, t3], ease: "easeInOut" }}
       />
@@ -96,12 +96,12 @@ function ZodiacScene({ sign, color }: { sign: string; color: string }) {
       {/* Second pulse ring */}
       <motion.div
         className="absolute rounded-full"
-        style={{ border: `1px solid ${color}80` }}
+        style={{ border: `1px solid ${color}70` }}
         initial={{ width: "10vmin", height: "10vmin", opacity: 0 }}
         animate={{
-          width:   ["10vmin",  "70vmin",  "95vmin",  "180vmin"],
-          height:  ["10vmin",  "70vmin",  "95vmin",  "180vmin"],
-          opacity: [0,         0.4,       0.25,      0],
+          width:   ["10vmin",  "55vmin",  "78vmin",  "126vmin"],
+          height:  ["10vmin",  "55vmin",  "78vmin",  "126vmin"],
+          opacity: [0,         0.32,      0.18,      0],
         }}
         transition={{
           duration: TOTAL_MS / 1000,
@@ -129,17 +129,17 @@ function ZodiacScene({ sign, color }: { sign: string; color: string }) {
         {/* Symbol */}
         <motion.span
           style={{
-            fontSize: "clamp(120px, 40vmin, 500px)",
+            fontSize: "clamp(100px, 32vmin, 380px)",
             lineHeight: 1,
             color,
-            filter: `drop-shadow(0 0 40px ${color}) drop-shadow(0 0 80px ${color}80)`,
+            filter: `drop-shadow(0 0 28px ${color}90) drop-shadow(0 0 56px ${color}60)`,
           }}
           animate={{
             filter: [
-              `drop-shadow(0 0 40px ${color}) drop-shadow(0 0 80px ${color}80)`,
-              `drop-shadow(0 0 80px ${color}) drop-shadow(0 0 160px ${color})`,
-              `drop-shadow(0 0 80px ${color}) drop-shadow(0 0 160px ${color})`,
-              `drop-shadow(0 0 20px ${color}40) drop-shadow(0 0 40px ${color}20)`,
+              `drop-shadow(0 0 28px ${color}90) drop-shadow(0 0 56px ${color}60)`,
+              `drop-shadow(0 0 50px ${color}) drop-shadow(0 0 100px ${color}80)`,
+              `drop-shadow(0 0 50px ${color}) drop-shadow(0 0 100px ${color}80)`,
+              `drop-shadow(0 0 14px ${color}30) drop-shadow(0 0 28px ${color}10)`,
             ],
           }}
           transition={{

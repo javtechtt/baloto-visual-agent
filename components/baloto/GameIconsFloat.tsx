@@ -57,21 +57,21 @@ export default function GameIconsFloat() {
               {/* Icon — spinning SVG wheel for colorloto, styled ball for others */}
               {game.id === "colorloto" ? (
                 <motion.div
-                  style={{ width: 80, height: 80, filter: "drop-shadow(0 0 14px rgba(255,255,255,0.4))" }}
+                  style={{ width: 68, height: 68, filter: "drop-shadow(0 0 10px rgba(255,255,255,0.3))" }}
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
                 >
-                  <ColorWheelSvg size={80} />
+                  <ColorWheelSvg size={68} />
                 </motion.div>
               ) : (
                 <div
-                  className="flex items-center justify-center rounded-full text-3xl select-none"
+                  className="flex items-center justify-center rounded-full text-2xl select-none"
                   style={{
-                    width: 80,
-                    height: 80,
+                    width: 68,
+                    height: 68,
                     background: `radial-gradient(circle at 35% 30%, ${game.accentColor}ee, ${game.accentColor}55)`,
-                    border: `2px solid ${game.accentColor}`,
-                    boxShadow: `0 0 28px ${game.accentColor}70, 0 0 56px ${game.accentColor}25`,
+                    border: `1.5px solid ${game.accentColor}`,
+                    boxShadow: `0 0 18px ${game.accentColor}55`,
                   }}
                 >
                   {GAME_ICONS[game.id]}
@@ -80,10 +80,10 @@ export default function GameIconsFloat() {
 
               {/* Game name */}
               <span
-                className="text-xs font-bold tracking-wider uppercase whitespace-nowrap"
+                className="text-xs font-semibold tracking-wider uppercase whitespace-nowrap"
                 style={{
                   color: game.accentColor,
-                  textShadow: `0 0 10px ${game.accentColor}80`,
+                  textShadow: `0 0 8px ${game.accentColor}55`,
                 }}
               >
                 {game.name}

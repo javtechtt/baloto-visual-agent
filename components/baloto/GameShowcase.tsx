@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, TargetAndTransition, Transition } from "framer-motion";
 import { useBalotoStore } from "@/store/baloto.store";
 import { GAME_LIST, GAME_ICONS, BalotoGame, GameId } from "@/lib/baloto/games";
+import { colors } from "@/lib/design/tokens";
 import LotteryBall from "./LotteryBall";
 import ColorWheelSvg from "./ColorWheelSvg";
 
@@ -13,7 +14,7 @@ const CARD_W  = 260;
 const CARD_H  = 360;
 const RADIUS  = 310;
 const ITEMS   = GAME_LIST.length; // 5
-const CYCLE_MS = 3500;
+const CYCLE_MS = 5500;
 
 // ─── Sample numbers shown on each card ───────────────────────────────────────
 
@@ -33,17 +34,17 @@ const SHOWCASE_BONUS: Partial<Record<GameId, number>> = {
 // ─── Per-game icon animations (colorloto uses SVG — handled separately) ──────
 
 const ICON_ANIMATE: Partial<Record<GameId, TargetAndTransition>> = {
-  baloto:     { scale: [1, 1.28, 1] },
-  miloto:     { y: [0, -12, 0] },
-  superastro: { x: [0, 18, 0], opacity: [1, 0.55, 1] },
-  revancha:   { rotate: [-9, 9, -9] },
+  baloto:     { scale: [1, 1.05, 1] },
+  miloto:     { y: [0, -5, 0] },
+  superastro: { x: [0, 8, 0], opacity: [1, 0.78, 1] },
+  revancha:   { rotate: [-4, 4, -4] },
 };
 
 const ICON_TRANSITION: Partial<Record<GameId, Transition>> = {
-  baloto:     { duration: 1.8, repeat: Infinity, ease: "easeInOut" },
-  miloto:     { duration: 1.3, repeat: Infinity, ease: "easeInOut" },
-  superastro: { duration: 2.2, repeat: Infinity, ease: "easeInOut" },
-  revancha:   { duration: 1.1, repeat: Infinity, ease: "easeInOut" },
+  baloto:     { duration: 2.8, repeat: Infinity, ease: "easeInOut" },
+  miloto:     { duration: 2.4, repeat: Infinity, ease: "easeInOut" },
+  superastro: { duration: 3.2, repeat: Infinity, ease: "easeInOut" },
+  revancha:   { duration: 2.0, repeat: Infinity, ease: "easeInOut" },
 };
 
 // ─── Opacity table per offset from active card ────────────────────────────────
@@ -51,7 +52,7 @@ const ICON_TRANSITION: Partial<Record<GameId, Transition>> = {
 function getCardOpacity(cardIdx: number, activeIdx: number): number {
   const offset     = ((cardIdx - activeIdx) % ITEMS + ITEMS) % ITEMS;
   const normalized = offset > ITEMS / 2 ? ITEMS - offset : offset;
-  return [1.0, 0.5, 0.12][Math.min(normalized, 2)];
+  return [1.0, 0.32, 0.06][Math.min(normalized, 2)];
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -150,9 +151,7 @@ export default function GameShowcase() {
             className="h-1.5 rounded-full"
             animate={{
               width:           i === activeIdx ? 20 : 6,
-              backgroundColor: i === activeIdx
-                ? GAME_LIST[activeIdx].accentColor
-                : "rgba(255,255,255,0.18)",
+              backgroundColor: i === activeIdx ? colors.gold : colors.inkFaint,
             }}
             transition={{ duration: 0.3 }}
           />
@@ -172,38 +171,29 @@ function CarouselCard({ game }: { game: BalotoGame }) {
     <div
       className="relative w-full h-full rounded-2xl overflow-hidden flex flex-col items-center justify-between py-7 px-5"
       style={{
-        background: `linear-gradient(160deg, ${game.accentColor}18 0%, rgba(10,6,20,0.92) 60%)`,
-        border:     `1px solid ${game.accentColor}30`,
-        boxShadow:  `0 0 40px ${game.accentColor}15, inset 0 1px 0 ${game.accentColor}20`,
+        // Single subtle radial — no per-game accent flood, no top-glow stack
+        background: `radial-gradient(120% 80% at 50% 0%, ${game.accentColor}10 0%, rgba(12,8,6,0.94) 60%)`,
+        border:     `1px solid ${colors.gold}33`,
+        boxShadow:  `inset 0 1px 0 rgba(255,255,255,0.04)`,
         backfaceVisibility: "hidden",
       }}
     >
-      {/* Radial glow */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse at 50% 20%, ${game.accentColor}22, transparent 65%)`,
-        }}
-      />
-
       {/* ── Animated icon ── */}
       {game.id === "colorloto" ? (
-        // SVG spinning color wheel
         <motion.div
           className="relative"
           animate={{ rotate: 360 }}
-          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-          style={{ filter: "drop-shadow(0 0 14px rgba(255,255,255,0.35))" }}
+          transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
+          style={{ filter: "drop-shadow(0 0 10px rgba(255,255,255,0.22))" }}
         >
           <ColorWheelSvg size={80} />
         </motion.div>
       ) : (
-        // Emoji with per-game loop animation
         <motion.div
           className="relative text-7xl leading-none"
           animate={ICON_ANIMATE[game.id]}
           transition={ICON_TRANSITION[game.id]}
-          style={{ filter: `drop-shadow(0 0 16px ${game.accentColor}90)` }}
+          style={{ filter: `drop-shadow(0 0 10px ${game.accentColor}70)` }}
         >
           {GAME_ICONS[game.id]}
         </motion.div>
@@ -213,11 +203,11 @@ function CarouselCard({ game }: { game: BalotoGame }) {
       <div className="relative text-center">
         <h3
           className="text-2xl font-black tracking-tight"
-          style={{ color: game.accentColor }}
+          style={{ color: colors.ink }}
         >
           {game.name}
         </h3>
-        <p className="text-white/50 text-xs mt-1 leading-snug px-2">
+        <p className="text-xs mt-1 leading-snug px-2" style={{ color: colors.inkMuted }}>
           {game.tagline}
         </p>
       </div>
@@ -246,10 +236,10 @@ function CarouselCard({ game }: { game: BalotoGame }) {
 
       {/* Price + draw days */}
       <div className="relative flex flex-col items-center gap-0.5">
-        <span className="text-sm font-bold" style={{ color: game.accentColor }}>
+        <span className="text-sm font-bold" style={{ color: colors.gold }}>
           ${game.price.toLocaleString()} COP
         </span>
-        <span className="text-white/50 text-xs">
+        <span className="text-xs" style={{ color: colors.inkMuted }}>
           {game.drawDays.join(" · ")}
         </span>
       </div>

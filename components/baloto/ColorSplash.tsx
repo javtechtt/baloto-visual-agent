@@ -5,18 +5,16 @@ import { useEffect, useRef } from "react";
 import { useBalotoStore } from "@/store/baloto.store";
 import { zIndex } from "@/lib/design/tokens";
 
-// 10 paint blobs — positions and sizes are seeded per render so they're stable
+// 8 paint blobs (down from 10) — positions stable per render
 const BLOB_CONFIGS = [
-  { cx: 0.5,  cy: 0.5,  r: 0.7,  delay: 0    },  // center — biggest
-  { cx: 0.0,  cy: 0.0,  r: 0.55, delay: 0.06 },  // top-left
-  { cx: 1.0,  cy: 0.0,  r: 0.55, delay: 0.09 },  // top-right
-  { cx: 0.0,  cy: 1.0,  r: 0.55, delay: 0.12 },  // bottom-left
-  { cx: 1.0,  cy: 1.0,  r: 0.55, delay: 0.15 },  // bottom-right
-  { cx: 0.5,  cy: 0.0,  r: 0.45, delay: 0.07 },  // top-center
-  { cx: 0.5,  cy: 1.0,  r: 0.45, delay: 0.10 },  // bottom-center
-  { cx: 0.0,  cy: 0.5,  r: 0.45, delay: 0.08 },  // left-center
-  { cx: 1.0,  cy: 0.5,  r: 0.45, delay: 0.11 },  // right-center
-  { cx: 0.3,  cy: 0.35, r: 0.35, delay: 0.13 },  // inner cluster
+  { cx: 0.5,  cy: 0.5,  r: 0.65, delay: 0    },  // center — biggest
+  { cx: 0.0,  cy: 0.0,  r: 0.5,  delay: 0.06 },  // top-left
+  { cx: 1.0,  cy: 0.0,  r: 0.5,  delay: 0.09 },  // top-right
+  { cx: 0.0,  cy: 1.0,  r: 0.5,  delay: 0.12 },  // bottom-left
+  { cx: 1.0,  cy: 1.0,  r: 0.5,  delay: 0.15 },  // bottom-right
+  { cx: 0.5,  cy: 0.0,  r: 0.4,  delay: 0.07 },  // top-center
+  { cx: 0.5,  cy: 1.0,  r: 0.4,  delay: 0.10 },  // bottom-center
+  { cx: 0.3,  cy: 0.35, r: 0.32, delay: 0.13 },  // inner cluster
 ];
 
 export default function ColorSplash() {
@@ -46,12 +44,12 @@ function SplashScene({ color, label }: { color: string; label: string }) {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true" style={{ zIndex: zIndex.effectColorSplash }}>
 
-      {/* Full-screen flash — instantaneous flood then recedes */}
+      {/* Full-screen flash — dimmed slightly so it feels more polished */}
       <motion.div
         className="absolute inset-0"
         style={{ background: color }}
         initial={{ opacity: 0 }}
-        animate={{ opacity: [0, 0.82, 0.75, 0] }}
+        animate={{ opacity: [0, 0.65, 0.55, 0] }}
         transition={{ duration: 1.8, times: [0, 0.08, 0.3, 1], ease: "easeOut" }}
       />
 
@@ -70,13 +68,13 @@ function SplashScene({ color, label }: { color: string; label: string }) {
         <motion.span
           className="font-black uppercase tracking-widest select-none"
           style={{
-            fontSize: "clamp(80px, 22vw, 280px)",
+            fontSize: "clamp(64px, 14vw, 200px)",
             color: "white",
-            textShadow: `0 0 60px ${color}, 0 0 120px ${color}, 0 4px 30px rgba(0,0,0,0.8)`,
+            textShadow: `0 0 36px ${color}, 0 4px 24px rgba(0,0,0,0.8)`,
             mixBlendMode: "overlay",
           }}
           initial={{ scale: 0.3, rotate: -8 }}
-          animate={{ scale: [0.3, 1.15, 1.0], rotate: [-8, 4, 0] }}
+          animate={{ scale: [0.3, 1.1, 1.0], rotate: [-8, 3, 0] }}
           transition={{ duration: 0.5, ease: [0.23, 1.2, 0.32, 1] }}
         >
           {label}
@@ -91,7 +89,7 @@ function PaintBlob({
 }: {
   cx: number; cy: number; r: number; delay: number; color: string;
 }) {
-  // Blob size = r * 200vmax so at r=0.7 it covers 140vmax
+  // Blob size = r * 200vmax so at r=0.65 it covers 130vmax
   const size = `${r * 200}vmax`;
 
   return (
@@ -104,10 +102,10 @@ function PaintBlob({
         height: size,
         transform: "translate(-50%, -50%)",
         background: color,
-        filter: "blur(40px)",
+        filter: "blur(24px)",
       }}
-      initial={{ scale: 0, opacity: 0.9 }}
-      animate={{ scale: [0, 1.3, 1.1, 0], opacity: [0.9, 0.85, 0.6, 0] }}
+      initial={{ scale: 0, opacity: 0.85 }}
+      animate={{ scale: [0, 1.2, 1.05, 0], opacity: [0.85, 0.75, 0.5, 0] }}
       transition={{
         duration: 1.7,
         delay,
