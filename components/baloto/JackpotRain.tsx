@@ -4,54 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useMemo, useState } from "react";
 import { useBalotoStore, JackpotRainTrigger } from "@/store/baloto.store";
 import { zIndex } from "@/lib/design/tokens";
+import { sfx } from "@/lib/audio/sfx";
 
-// ─── Sound generation via Web Audio API ───────────────────────────────────────
-
-function playCoinsSound() {
-  try {
-    const ctx = new AudioContext();
-    // Cascading coin arpeggio — 6 rapid pings, ~6dB quieter than before
-    const freqs = [1046, 1319, 1568, 2093, 2637, 3136];
-    freqs.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      const t = ctx.currentTime + i * 0.07;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.18, t + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
-      osc.start(t);
-      osc.stop(t + 0.5);
-    });
-  } catch {
-    // Audio not available — silent fallback
-  }
-}
-
-function playDollarsSound() {
-  try {
-    const ctx = new AudioContext();
-    // Cash register "ka-ching" — two-tone bell hit, quieter
-    [[1200, 0], [1800, 0.08]].forEach(([freq, delay]) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "triangle";
-      osc.frequency.value = freq;
-      const t = ctx.currentTime + delay;
-      gain.gain.setValueAtTime(0.25, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
-      osc.start(t);
-      osc.stop(t + 1.0);
-    });
-  } catch {
-    // Silent fallback
-  }
-}
+// Sounds route through the shared SFX engine so the global mute toggle governs
+// them and they don't spawn a fresh AudioContext per trigger.
 
 // ─── Rain item configuration ──────────────────────────────────────────────────
 
@@ -115,8 +71,8 @@ function RainScene({ trigger }: { trigger: JackpotRainTrigger }) {
 
   useEffect(() => {
     if (!soundFired) {
-      if (isCoins) playCoinsSound();
-      else playDollarsSound();
+      if (isCoins) sfx.coins();
+      else sfx.cash();
       setSoundFired(true);
     }
   }, [isCoins, soundFired]);

@@ -8,7 +8,7 @@ import CheckoutFlow from "@/components/baloto/CheckoutFlow";
 import AgentDock from "@/components/agent/AgentDock";
 import UrgencyPulse from "@/components/baloto/UrgencyPulse";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
-import { colors } from "@/lib/design/tokens";
+import { colors, neon, glow } from "@/lib/design/tokens";
 
 // Steps visible in the top progress bar. "success" is the post-confirm screen
 // — we hide the bar on that step so the celebration owns the viewport.
@@ -64,16 +64,18 @@ export default function CheckoutScene() {
               return (
                 <div key={step.id} className="flex items-center gap-2">
                   <span
+                    className={isCurrent ? "font-display" : undefined}
                     style={{
                       color: isCurrent
-                        ? colors.primary
+                        ? neon.cyan
                         : isDone
                         ? colors.ink
                         : colors.inkSubtle,
-                      fontWeight: isCurrent ? 600 : 400,
+                      fontWeight: isCurrent ? 700 : 400,
+                      textShadow: isCurrent ? glow.text(neon.cyan, 0.4) : "none",
                     }}
                   >
-                    <span style={{ color: colors.inkSubtle, marginRight: 6 }}>
+                    <span style={{ color: isCurrent ? neon.cyan : colors.inkSubtle, marginRight: 6 }}>
                       {i + 1}
                     </span>
                     {step.label}

@@ -1,12 +1,15 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronLeft, ChevronRight, Lock, CreditCard, X } from "lucide-react";
 import { useBalotoStore } from "@/store/baloto.store";
 import { GAMES } from "@/lib/baloto/games";
 import LotteryBall from "./LotteryBall";
 import FormInput from "@/components/ui/FormInput";
-import { colors, duration, slideInRight } from "@/lib/design/tokens";
+import WinConfetti from "@/components/casino/WinConfetti";
+import { sfx } from "@/lib/audio/sfx";
+import { colors, duration, slideInRight, gradients, neon, glow } from "@/lib/design/tokens";
 
 // CheckoutFlow renders the content of the current step inside a single card.
 // Progress is owned by CheckoutScene's top bar — this component no longer
@@ -242,13 +245,17 @@ function PaymentForm({ totalCOP, onNext, onBack }: { totalCOP: number; onNext: (
         {(["card", "paypal"] as const).map((m) => (
           <button
             key={m}
-            onClick={() => setMethod(m)}
+            onClick={() => {
+              sfx.click();
+              setMethod(m);
+            }}
             role="radio"
             aria-checked={method === m}
             className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all"
             style={{
-              background: method === m ? "rgba(201,20,20,0.12)" : "rgba(255,255,255,0.025)",
-              border: method === m ? `1px solid ${colors.brand}` : `1px solid ${colors.checkoutBorder}`,
+              background: method === m ? "rgba(34,211,238,0.10)" : "rgba(255,255,255,0.025)",
+              border: method === m ? `1px solid ${neon.cyan}` : `1px solid ${colors.checkoutBorder}`,
+              boxShadow: method === m ? `0 0 16px ${neon.cyan}44` : "none",
               color: method === m ? colors.ink : colors.inkMuted,
             }}
           >
@@ -376,6 +383,17 @@ function SuccessScreen({
   totalCOP: number;
   onDone: () => void;
 }) {
+  // Auto-return to the landing page 5s after the order is placed.
+  const [secsLeft, setSecsLeft] = useState(5);
+  useEffect(() => {
+    const tick = setInterval(() => setSecsLeft((s) => Math.max(0, s - 1)), 1000);
+    const redirect = setTimeout(onDone, 5000);
+    return () => {
+      clearInterval(tick);
+      clearTimeout(redirect);
+    };
+  }, [onDone]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.99 }}
@@ -385,26 +403,36 @@ function SuccessScreen({
       role="status"
       aria-label="Order confirmed"
     >
-      {/* Quiet check mark inside a thin ring */}
-      <div
+      {/* Win celebration — confetti burst + fanfare, fires once on mount */}
+      <WinConfetti />
+
+      {/* Glowing win check mark inside a neon ring */}
+      <motion.div
         className="flex items-center justify-center rounded-full mb-6"
         style={{
           width: 64,
           height: 64,
-          background: "rgba(212,162,74,0.08)",
-          border: `1px solid ${colors.gold}55`,
-          color: colors.gold,
+          background: `radial-gradient(circle, ${neon.green}22 0%, transparent 70%)`,
+          border: `1px solid ${neon.green}`,
+          color: neon.green,
+          boxShadow: glow.box(neon.green, 0.9),
         }}
+        initial={{ scale: 0, rotate: -30 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", stiffness: 320, damping: 16 }}
       >
-        <Check size={24} strokeWidth={2} aria-hidden="true" />
-      </div>
+        <Check size={26} strokeWidth={2.5} aria-hidden="true" />
+      </motion.div>
 
-      <h2 className="text-xl font-semibold mb-1" style={{ color: colors.ink }}>
+      <h2
+        className="font-display text-2xl font-extrabold uppercase tracking-wide mb-1"
+        style={{ color: colors.ink, textShadow: glow.text(neon.green, 0.4) }}
+      >
         Tickets confirmed
       </h2>
       <div
         className="h-px mb-4"
-        style={{ width: 56, background: colors.gold }}
+        style={{ width: 64, background: gradients.neonSweep, boxShadow: glow.box(neon.cyan, 0.5) }}
         aria-hidden="true"
       />
       <p className="text-sm max-w-[340px] mb-8 leading-relaxed" style={{ color: colors.inkMuted }}>
@@ -461,8 +489,12 @@ function SuccessScreen({
         onMouseEnter={(e) => (e.currentTarget.style.color = colors.ink)}
         onMouseLeave={(e) => (e.currentTarget.style.color = colors.inkMuted)}
       >
-        Play again
+        Return to home now
       </button>
+
+      <p className="text-xs mt-3" style={{ color: colors.inkSubtle }} aria-live="polite">
+        Returning to home in {secsLeft}s…
+      </p>
     </motion.div>
   );
 }
@@ -472,17 +504,23 @@ function SuccessScreen({
 function StepButton({ onClick, label, disabled }: { onClick: () => void; label: string; disabled?: boolean }) {
   return (
     <motion.button
-      onClick={onClick}
+      onClick={() => {
+        if (!disabled) sfx.select();
+        onClick();
+      }}
+      onMouseEnter={() => !disabled && sfx.hover()}
       disabled={disabled}
       className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-opacity"
       style={{
         background: disabled
           ? "rgba(255,255,255,0.04)"
-          : `linear-gradient(135deg, ${colors.brand}, ${colors.primaryDark})`,
+          : gradients.primaryButton,
         color: disabled ? colors.inkSubtle : "#fff",
+        boxShadow: disabled ? "none" : glow.box(neon.magenta, 0.65),
+        border: disabled ? "none" : `1px solid ${neon.magentaBright}55`,
         cursor: disabled ? "not-allowed" : "pointer",
       }}
-      whileHover={disabled ? {} : { scale: 1.015 }}
+      whileHover={disabled ? {} : { scale: 1.015, boxShadow: glow.box(neon.magenta, 1.0) }}
       whileTap={disabled ? {} : { scale: 0.985 }}
     >
       {label}
@@ -494,7 +532,10 @@ function StepButton({ onClick, label, disabled }: { onClick: () => void; label: 
 function BackButton({ onClick, label = "Back" }: { onClick: () => void; label?: string }) {
   return (
     <button
-      onClick={onClick}
+      onClick={() => {
+        sfx.click();
+        onClick();
+      }}
       className="flex items-center justify-center gap-1 text-xs transition-colors py-1"
       style={{ color: colors.inkSubtle }}
       onMouseEnter={(e) => (e.currentTarget.style.color = colors.ink)}

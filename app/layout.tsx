@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Orbitron } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,9 +12,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Futuristic display face — used for the neon marquee logo and headline numerals
+const orbitron = Orbitron({
+  variable: "--font-orbitron",
+  subsets: ["latin"],
+  weight: ["500", "700", "900"],
+});
+
 export const metadata: Metadata = {
-  title: "Baloto AI — Visual Voice Agent",
-  description: "Tu asistente inteligente para jugar Baloto",
+  title: "Baloto AI — Neon Casino Voice Agent",
+  description: "Step onto the floor — play Baloto with an AI voice agent",
 };
 
 export default function RootLayout({
@@ -25,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${orbitron.variable} antialiased`}
       >
         {children}
       </body>

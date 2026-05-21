@@ -4,7 +4,9 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, TargetAndTransition, Transition } from "framer-motion";
 import { useBalotoStore } from "@/store/baloto.store";
 import { GAME_LIST, GAME_ICONS, BalotoGame, GameId } from "@/lib/baloto/games";
-import { colors } from "@/lib/design/tokens";
+import { colors, neon, glow } from "@/lib/design/tokens";
+import { sfx } from "@/lib/audio/sfx";
+import { JACKPOTS_COP, GAME_BADGES, formatMillions } from "@/lib/casino/data";
 import LotteryBall from "./LotteryBall";
 import ColorWheelSvg from "./ColorWheelSvg";
 
@@ -97,6 +99,16 @@ export default function GameShowcase() {
   // Rotate the stage so the active card faces the viewer
   const stageAngle = -(activeIdx / ITEMS) * 360;
 
+  // Soft tick as the carousel rotates to a new game (skip the first paint)
+  const firstPaint = useRef(true);
+  useEffect(() => {
+    if (firstPaint.current) {
+      firstPaint.current = false;
+      return;
+    }
+    sfx.hover();
+  }, [activeIdx]);
+
   return (
     <div className="flex flex-col items-center justify-center h-full select-none">
 
@@ -124,6 +136,7 @@ export default function GameShowcase() {
             // CRITICAL: rotateY BEFORE translateZ — positions each card on the cylinder
             const cardAngle = (i / ITEMS) * 360;
             const opacity   = getCardOpacity(i, activeIdx);
+            const focused   = i === activeIdx;
             return (
               <div
                 key={game.id}
@@ -136,7 +149,7 @@ export default function GameShowcase() {
                   transition: "opacity 0.4s",
                 }}
               >
-                <CarouselCard game={game} />
+                <CarouselCard game={game} focused={focused} />
               </div>
             );
           })}
@@ -145,17 +158,21 @@ export default function GameShowcase() {
 
       {/* ── Dot indicators ── */}
       <div className="flex items-center gap-2 mt-10">
-        {GAME_LIST.map((g, i) => (
-          <motion.div
-            key={g.id}
-            className="h-1.5 rounded-full"
-            animate={{
-              width:           i === activeIdx ? 20 : 6,
-              backgroundColor: i === activeIdx ? colors.gold : colors.inkFaint,
-            }}
-            transition={{ duration: 0.3 }}
-          />
-        ))}
+        {GAME_LIST.map((g, i) => {
+          const active = i === activeIdx;
+          return (
+            <motion.div
+              key={g.id}
+              className="h-1.5 rounded-full"
+              animate={{
+                width:           active ? 22 : 6,
+                backgroundColor: active ? neon.cyan : colors.inkFaint,
+                boxShadow:       active ? glow.box(neon.cyan, 0.6) : "0 0 0 transparent",
+              }}
+              transition={{ duration: 0.3 }}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -163,86 +180,169 @@ export default function GameShowcase() {
 
 // ─── Single carousel card face ────────────────────────────────────────────────
 
-function CarouselCard({ game }: { game: BalotoGame }) {
+function CarouselCard({ game, focused }: { game: BalotoGame; focused: boolean }) {
   const numbers     = SHOWCASE_NUMBERS[game.id];
   const bonusNumber = SHOWCASE_BONUS[game.id];
+  const accent      = game.accentColor;
 
   return (
-    <div
-      className="relative w-full h-full rounded-2xl overflow-hidden flex flex-col items-center justify-between py-7 px-5"
-      style={{
-        // Single subtle radial — no per-game accent flood, no top-glow stack
-        background: `radial-gradient(120% 80% at 50% 0%, ${game.accentColor}10 0%, rgba(12,8,6,0.94) 60%)`,
-        border:     `1px solid ${colors.gold}33`,
-        boxShadow:  `inset 0 1px 0 rgba(255,255,255,0.04)`,
-        backfaceVisibility: "hidden",
-      }}
-    >
-      {/* ── Animated icon ── */}
-      {game.id === "colorloto" ? (
-        <motion.div
-          className="relative"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
-          style={{ filter: "drop-shadow(0 0 10px rgba(255,255,255,0.22))" }}
-        >
-          <ColorWheelSvg size={80} />
-        </motion.div>
-      ) : (
-        <motion.div
-          className="relative text-7xl leading-none"
-          animate={ICON_ANIMATE[game.id]}
-          transition={ICON_TRANSITION[game.id]}
-          style={{ filter: `drop-shadow(0 0 10px ${game.accentColor}70)` }}
-        >
-          {GAME_ICONS[game.id]}
-        </motion.div>
-      )}
+    <>
+      {/* Neon pedestal — light pool the card seems to stand in (focused only) */}
+      <motion.div
+        className="absolute left-1/2 -translate-x-1/2 rounded-[50%] pointer-events-none"
+        style={{
+          bottom: -26,
+          width: "118%",
+          height: 54,
+          background: `radial-gradient(ellipse at center, ${accent} 0%, transparent 70%)`,
+          filter: "blur(10px)",
+        }}
+        animate={{ opacity: focused ? 0.55 : 0 }}
+        transition={{ duration: 0.4 }}
+      />
 
-      {/* Game name + tagline */}
-      <div className="relative text-center">
-        <h3
-          className="text-2xl font-black tracking-tight"
-          style={{ color: colors.ink }}
-        >
-          {game.name}
-        </h3>
-        <p className="text-xs mt-1 leading-snug px-2" style={{ color: colors.inkMuted }}>
-          {game.tagline}
-        </p>
-      </div>
+      <motion.div
+        className="relative w-full h-full rounded-2xl overflow-hidden flex flex-col items-center justify-between py-7 px-5"
+        style={{
+          // Deep glass with a faint accent bloom from the top
+          background: `radial-gradient(130% 90% at 50% -10%, ${accent}22 0%, rgba(10,5,20,0.96) 58%)`,
+          backfaceVisibility: "hidden",
+          backdropFilter: "blur(4px)",
+        }}
+        animate={{
+          border: `1px solid ${focused ? accent : `${accent}33`}`,
+          boxShadow: focused
+            ? `${glow.box(accent, 1.1)}, inset 0 1px 0 rgba(255,255,255,0.07)`
+            : `0 0 0 transparent, inset 0 1px 0 rgba(255,255,255,0.04)`,
+        }}
+        transition={{ duration: 0.4 }}
+      >
+        {/* Neon top light bar */}
+        <div
+          className="absolute top-0 left-0 right-0"
+          style={{
+            height: 2,
+            background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
+            boxShadow: `0 0 12px ${accent}`,
+            opacity: focused ? 1 : 0.4,
+          }}
+          aria-hidden="true"
+        />
 
-      {/* Sample lottery balls */}
-      <div className="relative flex flex-wrap justify-center gap-1.5">
-        {numbers.map((n, i) => (
-          <LotteryBall
-            key={i}
-            value={n}
-            accentColor={game.accentColor}
-            size="sm"
-            index={i}
-          />
-        ))}
-        {bonusNumber !== undefined && (
-          <LotteryBall
-            value={bonusNumber}
-            accentColor={game.accentColor}
-            isBonus
-            size="sm"
-            index={numbers.length}
-          />
+        {/* HOT / NEW casino badge */}
+        {GAME_BADGES[game.id] && (
+          <div
+            className="absolute top-3 right-3 font-display font-bold uppercase tracking-widest text-[9px] px-2 py-1 rounded-md"
+            style={{
+              color: "#0a0517",
+              background:
+                GAME_BADGES[game.id] === "HOT"
+                  ? `linear-gradient(135deg, ${neon.magenta}, ${neon.gold})`
+                  : `linear-gradient(135deg, ${neon.cyan}, ${neon.green})`,
+              boxShadow: glow.box(
+                GAME_BADGES[game.id] === "HOT" ? neon.magenta : neon.cyan,
+                0.7
+              ),
+            }}
+          >
+            {GAME_BADGES[game.id] === "HOT" ? "🔥 Hot" : "✦ New"}
+          </div>
         )}
-      </div>
 
-      {/* Price + draw days */}
-      <div className="relative flex flex-col items-center gap-0.5">
-        <span className="text-sm font-bold" style={{ color: colors.gold }}>
-          ${game.price.toLocaleString()} COP
-        </span>
-        <span className="text-xs" style={{ color: colors.inkMuted }}>
-          {game.drawDays.join(" · ")}
-        </span>
-      </div>
-    </div>
+        {/* ── Animated icon ── */}
+        {game.id === "colorloto" ? (
+          <motion.div
+            className="relative"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
+            style={{ filter: `drop-shadow(0 0 12px ${accent}aa)` }}
+          >
+            <ColorWheelSvg size={80} />
+          </motion.div>
+        ) : (
+          <motion.div
+            className="relative text-7xl leading-none"
+            animate={ICON_ANIMATE[game.id]}
+            transition={ICON_TRANSITION[game.id]}
+            style={{ filter: `drop-shadow(0 0 14px ${accent}aa)` }}
+          >
+            {GAME_ICONS[game.id]}
+          </motion.div>
+        )}
+
+        {/* Game name + jackpot prize + tagline */}
+        <div className="relative text-center">
+          <h3
+            className="font-display text-xl font-extrabold tracking-wide uppercase"
+            style={{
+              color: colors.ink,
+              textShadow: focused ? glow.text(accent, 0.55) : "none",
+            }}
+          >
+            {game.name}
+          </h3>
+
+          {/* Jackpot prize — the "win this much" hook */}
+          <div className="mt-2 flex flex-col items-center gap-0.5">
+            <span
+              className="uppercase tracking-[0.3em] text-[8px]"
+              style={{ color: colors.inkSubtle }}
+            >
+              {game.jackpotLabel}
+            </span>
+            <span
+              className="font-display font-black leading-none"
+              style={{
+                fontSize: 17,
+                color: neon.gold,
+                textShadow: focused ? glow.text(neon.gold, 0.6) : glow.text(neon.gold, 0.25),
+              }}
+            >
+              {formatMillions(JACKPOTS_COP[game.id])}
+            </span>
+          </div>
+
+          <p className="text-[11px] mt-2 leading-snug px-2" style={{ color: colors.inkMuted }}>
+            {game.tagline}
+          </p>
+        </div>
+
+        {/* Sample lottery balls */}
+        <div className="relative flex flex-wrap justify-center gap-1.5">
+          {numbers.map((n, i) => (
+            <LotteryBall
+              key={i}
+              value={n}
+              accentColor={accent}
+              size="sm"
+              index={i}
+            />
+          ))}
+          {bonusNumber !== undefined && (
+            <LotteryBall
+              value={bonusNumber}
+              accentColor={accent}
+              isBonus
+              size="sm"
+              index={numbers.length}
+            />
+          )}
+        </div>
+
+        {/* Price + draw days */}
+        <div className="relative flex flex-col items-center gap-0.5">
+          <span
+            className="font-display text-base font-bold tracking-wide"
+            style={{ color: neon.gold, textShadow: glow.text(neon.gold, 0.5) }}
+          >
+            ${game.price.toLocaleString()}
+            <span className="text-[10px] ml-1 tracking-widest" style={{ color: colors.inkMuted }}>COP</span>
+          </span>
+          <span className="text-xs" style={{ color: colors.inkMuted }}>
+            {game.drawDays.join(" · ")}
+          </span>
+        </div>
+      </motion.div>
+    </>
   );
 }

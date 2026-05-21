@@ -13,12 +13,12 @@ const STATUS_CONFIG: Record<
   AgentStatus,
   { color: string; glowColor: string; label: string }
 > = {
-  idle:       { color: "#1e293b",      glowColor: "transparent",          label: "Start" },
-  connecting: { color: colors.info,    glowColor: `${colors.info}18`,     label: "Connecting" },
-  listening:  { color: colors.success, glowColor: `${colors.success}22`,  label: "Listening" },
-  thinking:   { color: colors.warning, glowColor: `${colors.warning}22`,  label: "Thinking" },
-  speaking:   { color: colors.primary, glowColor: `${colors.primary}22`,  label: "Speaking" },
-  error:      { color: colors.error,   glowColor: `${colors.error}30`,    label: "Error" },
+  idle:       { color: "#2a1a47",      glowColor: `${colors.brand}14`,    label: "Start" },
+  connecting: { color: colors.info,    glowColor: `${colors.info}3a`,     label: "Connecting" },
+  listening:  { color: colors.success, glowColor: `${colors.success}3a`,  label: "Listening" },
+  thinking:   { color: colors.warning, glowColor: `${colors.warning}3a`,  label: "Thinking" },
+  speaking:   { color: colors.primary, glowColor: `${colors.primary}3a`,  label: "Speaking" },
+  error:      { color: colors.error,   glowColor: `${colors.error}44`,    label: "Error" },
 };
 
 export default function AgentOrb() {

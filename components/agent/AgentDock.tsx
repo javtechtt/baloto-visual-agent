@@ -8,7 +8,8 @@ import { connectAgent, disconnectAgent } from "@/lib/realtime/client";
 import AgentOrb from "@/components/agent/AgentOrb";
 import TranscriptBubble from "@/components/agent/TranscriptBubble";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { zIndex, gradients, colors } from "@/lib/design/tokens";
+import { zIndex, gradients, colors, neon, glow } from "@/lib/design/tokens";
+import { sfx } from "@/lib/audio/sfx";
 
 // Orb intrinsic size — used to derive the negative-margin clip math for both variants
 const ORB_FULL = 256;
@@ -90,17 +91,22 @@ export default function AgentDock({ variant = "full" }: AgentDockProps) {
           {!isActive ? (
             <motion.button
               key="start"
-              onClick={connectAgent}
+              onClick={() => {
+                sfx.click();
+                connectAgent();
+              }}
+              onMouseEnter={() => sfx.hover()}
               aria-label={isConnecting ? "Connecting to voice agent" : "Start voice conversation with Loto"}
-              className="flex items-center gap-2 px-5 py-3 rounded-full text-white font-medium text-sm tracking-wide"
+              className="flex items-center gap-2 px-5 py-3 rounded-full text-white font-semibold text-sm tracking-wide"
               style={{
                 background: gradients.primaryButton,
-                boxShadow: "0 0 20px rgba(239,68,68,0.4)",
+                boxShadow: glow.box(neon.magenta, 0.85),
+                border: `1px solid ${neon.magentaBright}66`,
               }}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              whileHover={{ scale: 1.05, boxShadow: "0 0 35px rgba(239,68,68,0.6)" }}
+              whileHover={{ scale: 1.05, boxShadow: glow.box(neon.magenta, 1.3) }}
               whileTap={{ scale: 0.97 }}
               disabled={isConnecting}
             >
@@ -110,7 +116,10 @@ export default function AgentDock({ variant = "full" }: AgentDockProps) {
           ) : (
             <motion.button
               key="stop"
-              onClick={disconnectAgent}
+              onClick={() => {
+                sfx.click();
+                disconnectAgent();
+              }}
               aria-label="End voice session"
               className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium tracking-wide"
               style={{
@@ -135,8 +144,8 @@ export default function AgentDock({ variant = "full" }: AgentDockProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-1.5 text-xs tracking-widest uppercase"
-              style={{ color: colors.textMuted }}
+              className="flex items-center gap-1.5 text-xs tracking-widest uppercase font-display"
+              style={{ color: neon.cyan, textShadow: glow.text(neon.cyan, 0.5) }}
               aria-live="polite"
             >
               <Mic size={10} aria-hidden="true" />
@@ -176,7 +185,10 @@ function CompactDock({ isActive, isConnecting }: { isActive: boolean; isConnecti
 
       {!isActive ? (
         <button
-          onClick={connectAgent}
+          onClick={() => {
+            sfx.click();
+            connectAgent();
+          }}
           aria-label={isConnecting ? "Connecting" : "Talk to Karol"}
           disabled={isConnecting}
           className="flex items-center justify-center rounded-full transition-colors"
@@ -192,7 +204,10 @@ function CompactDock({ isActive, isConnecting }: { isActive: boolean; isConnecti
         </button>
       ) : (
         <button
-          onClick={disconnectAgent}
+          onClick={() => {
+            sfx.click();
+            disconnectAgent();
+          }}
           aria-label="End voice session"
           className="flex items-center justify-center rounded-full transition-colors"
           style={{

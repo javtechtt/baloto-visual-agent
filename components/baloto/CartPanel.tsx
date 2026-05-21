@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ShoppingCart, Plus } from "lucide-react";
 import { useBalotoStore } from "@/store/baloto.store";
 import { GAMES } from "@/lib/baloto/games";
+import { gradients, neon, glow } from "@/lib/design/tokens";
+import { sfx } from "@/lib/audio/sfx";
+import ChipStack from "@/components/casino/ChipStack";
 import LotteryBall from "./LotteryBall";
 
 export default function CartPanel() {
@@ -133,20 +136,28 @@ export default function CartPanel() {
 
       {/* Total + checkout */}
       <div className="flex items-center justify-between pt-2 border-t border-white/10">
-        <div>
-          <p className="text-white/30 text-xs">Total</p>
-          <p className="text-white font-semibold text-sm">
-            ${totalCOP.toLocaleString()} COP
-          </p>
+        <div className="flex items-end gap-3">
+          <ChipStack count={Math.round(totalCOP / 1000)} />
+          <div>
+            <p className="text-white/30 text-xs">Total</p>
+            <p className="text-white font-semibold text-sm">
+              ${totalCOP.toLocaleString()} COP
+            </p>
+          </div>
         </div>
         <motion.button
-          onClick={openCheckout}
+          onClick={() => {
+            sfx.select();
+            openCheckout();
+          }}
+          onMouseEnter={() => sfx.hover()}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
           style={{
-            background: "linear-gradient(135deg, #ef4444, #b91c1c)",
-            boxShadow: "0 0 20px rgba(239,68,68,0.3)",
+            background: gradients.primaryButton,
+            boxShadow: glow.box(neon.magenta, 0.7),
+            border: `1px solid ${neon.magentaBright}55`,
           }}
-          whileHover={{ scale: 1.04, boxShadow: "0 0 30px rgba(239,68,68,0.5)" }}
+          whileHover={{ scale: 1.04, boxShadow: glow.box(neon.magenta, 1.1) }}
           whileTap={{ scale: 0.97 }}
         >
           <ShoppingCart size={14} />

@@ -53,8 +53,8 @@ export default function LotteryBall({
         boxShadow: isEmpty
           ? `inset 0 0 0 1px rgba(255,255,255,0.1)`
           : isBonus
-          ? `0 0 16px ${accentColor}66, inset 0 1px 0 rgba(255,255,255,0.3)`
-          : `0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.6)`,
+          ? `0 0 14px ${accentColor}, 0 0 26px ${accentColor}77, inset 0 1px 0 rgba(255,255,255,0.35)`
+          : `0 2px 8px rgba(0,0,0,0.5), 0 0 12px ${accentColor}44, inset 0 1px 0 rgba(255,255,255,0.7)`,
       }}
     >
       {!isEmpty && (

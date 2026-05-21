@@ -5,43 +5,43 @@
 // ─── Colors ──────────────────────────────────────────────────────────────────
 
 export const colors = {
-  // Brand
-  primary: "#ef4444",       // hot accent — used sparingly for highlights
-  primaryDark: "#b91c1c",
-  brand: "#c91414",         // deeper, less neon — used on chrome / borders
+  // Brand — hot casino red, still used for alerts / brand dot
+  primary: "#ff2d6f",       // hot neon rose — highlights & live state
+  primaryDark: "#c91450",
+  brand: "#ff2d95",         // neon magenta — primary chrome / glowing borders
 
-  // Hero accent (ordering scene only)
-  gold: "#d4a24a",
-  goldDim: "#9d7a36",
+  // Hero accent (ordering scene) — luminous casino gold
+  gold: "#ffd86b",
+  goldDim: "#c79a3c",
 
   // Semantic
-  success: "#22c55e",
+  success: "#39ff9e",       // neon mint — "win" / confirmed
   successDark: "#16a34a",
-  warning: "#f59e0b",
-  info: "#0ea5e9",
-  error: "#ef4444",
+  warning: "#ffb020",
+  info: "#22d3ee",          // neon cyan
+  error: "#ff4d6d",
 
-  // Colorloto palette
-  lotoRed: "#ef4444",
-  lotoGreen: "#22c55e",
-  lotoBlue: "#3b82f6",
-  lotoYellow: "#eab308",
+  // Colorloto palette (kept vivid)
+  lotoRed: "#ff4d6d",
+  lotoGreen: "#39ff9e",
+  lotoBlue: "#22d3ee",
+  lotoYellow: "#ffd86b",
 
-  // Neutrals (ordering theme — warmer)
-  bgDeep: "#08070a",
-  bgBase: "#0a0a0a",
-  bgElevated: "#15100a",
-  surface: "rgba(255,255,255,0.04)",
-  surfaceHover: "rgba(255,255,255,0.07)",
-  surfaceBorder: "rgba(255,255,255,0.08)",
-  surfaceBorderHover: "rgba(255,255,255,0.12)",
+  // Neutrals (casino floor — deep violet void)
+  bgDeep: "#070310",
+  bgBase: "#0a0517",
+  bgElevated: "#1a0d33",    // violet glow center for radial
+  surface: "rgba(168,85,247,0.05)",
+  surfaceHover: "rgba(168,85,247,0.10)",
+  surfaceBorder: "rgba(255,255,255,0.09)",
+  surfaceBorderHover: "rgba(34,211,238,0.35)",
 
-  // Checkout palette (explicitly neutral, no warm cast)
-  checkoutBg: "#0e0d10",
-  checkoutSurface: "#17151a",
-  checkoutSurfaceHover: "#1d1b21",
-  checkoutBorder: "rgba(255,255,255,0.06)",
-  checkoutBorderHover: "rgba(255,255,255,0.12)",
+  // Checkout palette (the cashier — deep violet, calmer than the floor)
+  checkoutBg: "#0a0614",
+  checkoutSurface: "#15102a",
+  checkoutSurfaceHover: "#1d1638",
+  checkoutBorder: "rgba(255,255,255,0.07)",
+  checkoutBorderHover: "rgba(34,211,238,0.3)",
 
   // Text — warm ivory for ordering, cooler ink for checkout
   textPrimary: "#ffffff",
@@ -51,10 +51,35 @@ export const colors = {
   textSubtle: "rgba(255,255,255,0.3)",
   textFaint: "rgba(255,255,255,0.2)",
 
-  ink: "#f4ecdf",
-  inkMuted: "rgba(244,236,223,0.62)",
-  inkSubtle: "rgba(244,236,223,0.38)",
-  inkFaint: "rgba(244,236,223,0.22)",
+  ink: "#f4ecff",
+  inkMuted: "rgba(244,236,255,0.62)",
+  inkSubtle: "rgba(244,236,255,0.38)",
+  inkFaint: "rgba(244,236,255,0.22)",
+} as const;
+
+// ─── Neon accent palette (the casino's signature lights) ─────────────────────
+
+export const neon = {
+  cyan: "#22d3ee",
+  cyanBright: "#67e8f9",
+  magenta: "#ff2d95",
+  magentaBright: "#ff6ec7",
+  violet: "#a855f7",
+  violetBright: "#c084fc",
+  gold: "#ffd86b",
+  goldBright: "#ffe9a8",
+  green: "#39ff9e",
+} as const;
+
+// Neon glow generators — drop-in box-shadow / text-shadow strings.
+// `s` scales the spread for emphasis (1 = default, 2 = hero element).
+export const glow = {
+  box: (hex: string, s = 1) =>
+    `0 0 ${8 * s}px ${hex}, 0 0 ${22 * s}px ${hex}88, 0 0 ${44 * s}px ${hex}44`,
+  text: (hex: string, s = 1) =>
+    `0 0 ${6 * s}px ${hex}, 0 0 ${18 * s}px ${hex}aa, 0 0 ${36 * s}px ${hex}66`,
+  ring: (hex: string, s = 1) =>
+    `inset 0 0 ${10 * s}px ${hex}55, 0 0 ${14 * s}px ${hex}66`,
 } as const;
 
 // Colorloto color map — used by PlaySlip and ColorWheelSvg
@@ -142,9 +167,13 @@ export const breakpoints = {
 // ─── Gradients (reusable) ────────────────────────────────────────────────────
 
 export const gradients = {
-  primaryButton: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryDark})`,
+  primaryButton: `linear-gradient(135deg, ${neon.magenta}, ${neon.violet})`,
   successButton: `linear-gradient(135deg, ${colors.success}, ${colors.successDark})`,
-  // Single warm radial — replaces the prior red/purple split
-  bgRadial: `radial-gradient(ellipse at 50% 35%, ${colors.bgElevated} 0%, ${colors.bgDeep} 70%)`,
-  // Checkout has a flat background — no gradient
+  // Casino floor — violet glow blooming up from the stage, fading to void
+  bgRadial: `radial-gradient(ellipse 90% 70% at 50% 42%, ${colors.bgElevated} 0%, ${colors.bgBase} 45%, ${colors.bgDeep} 80%)`,
+  // Neon marquee sweep — cyan → magenta → gold (for text/borders)
+  neonSweep: `linear-gradient(90deg, ${neon.cyan}, ${neon.magenta} 50%, ${neon.gold})`,
+  // Light pool cast on the floor under the active game
+  spotlight: `radial-gradient(ellipse 60% 100% at 50% 0%, ${neon.violet}3a 0%, transparent 70%)`,
+  // Checkout retains its deep-violet flat base — no gradient
 } as const;

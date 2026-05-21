@@ -4,6 +4,16 @@ import { NextResponse } from "next/server";
 // It exchanges your secret OPENAI_API_KEY for a short-lived ephemeral token
 // that the browser can use to connect directly to OpenAI via WebRTC.
 // The API key is never sent to the client.
+//
+// GA Realtime API: ephemeral tokens are minted at /v1/realtime/client_secrets
+// (the Beta /v1/realtime/sessions endpoint was retired — it now 400s with
+// "beta_api_shape_disabled"). The token value comes back at `response.value`.
+
+// GA realtime model. `gpt-realtime` is the stable GA alias.
+const REALTIME_MODEL = "gpt-realtime";
+// Initial voice — bound to the ephemeral token at creation. The client also
+// sets this on its first session.update. Voice cannot change once audio flows.
+const INITIAL_VOICE = "coral";
 
 export async function POST() {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -15,17 +25,20 @@ export async function POST() {
     );
   }
 
-  const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
+  const response = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-realtime-1.5",
-      // Initial voice — client overrides this per-agent via session.update.
-      // Sales agent (Loto): coral | Checkout agent (Karol): shimmer
-      voice: "coral",
+      session: {
+        type: "realtime",
+        model: REALTIME_MODEL,
+        audio: {
+          output: { voice: INITIAL_VOICE },
+        },
+      },
     }),
   });
 
@@ -40,6 +53,6 @@ export async function POST() {
 
   const session = await response.json();
 
-  // Return the full session object — client only uses session.client_secret.value
+  // Return the full payload — client reads session.value (the ephemeral key).
   return NextResponse.json(session);
 }

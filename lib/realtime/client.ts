@@ -8,11 +8,15 @@ import { GameId, serializeProductCatalog } from "@/lib/baloto/games";
 import { GAMES } from "@/lib/baloto/games";
 import type { CheckoutStep, PaymentMethod } from "@/store/baloto.store";
 import { startAudioVisualization, stopAudioVisualization } from "@/lib/audio/visualizer";
+import { sfx } from "@/lib/audio/sfx";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+// GA client_secrets response: the ephemeral key is at the top-level `value`.
+// (Beta nested it under client_secret.value — kept as a fallback for safety.)
 interface RealtimeSession {
-  client_secret: { value: string };
+  value?: string;
+  client_secret?: { value: string };
 }
 
 // ─── Connection state (module-level, not in React state) ──────────────────────
@@ -77,7 +81,7 @@ export async function connectAgent(): Promise<void> {
     }
 
     const session: RealtimeSession = await sessionRes.json();
-    const ephemeralKey = session.client_secret.value;
+    const ephemeralKey = session.value ?? session.client_secret?.value;
     if (!ephemeralKey) throw new Error("No ephemeral key in session response");
 
     // ── WebRTC setup ──────────────────────────────────────────────────────────
@@ -132,17 +136,16 @@ export async function connectAgent(): Promise<void> {
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
-    const sdpRes = await fetch(
-      "https://api.openai.com/v1/realtime?model=gpt-realtime-1.5",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${ephemeralKey}`,
-          "Content-Type": "application/sdp",
-        },
-        body: offer.sdp,
-      }
-    );
+    // GA SDP handshake endpoint. The model is already bound to the ephemeral
+    // token at creation, so it is not passed here (Beta used /v1/realtime?model=).
+    const sdpRes = await fetch("https://api.openai.com/v1/realtime/calls", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${ephemeralKey}`,
+        "Content-Type": "application/sdp",
+      },
+      body: offer.sdp,
+    });
 
     if (!sdpRes.ok) {
       const errText = await sdpRes.text();
@@ -169,22 +172,28 @@ function configureSession() {
   currentAgent = "sales";
   useAgentStore.getState().setActiveAgent("sales");
 
+  // GA session shape: audio config nested under audio.input / audio.output,
+  // `output_modalities` instead of `modalities`. Voice is safe to set here —
+  // this first update runs at data-channel open, before any audio is present.
   sendEvent({
     type: "session.update",
     session: {
-      modalities: ["audio", "text"],
+      type: "realtime",
       instructions: config.prompt,
-      voice: config.voice,
-      input_audio_format: "pcm16",
-      output_audio_format: "pcm16",
-      input_audio_transcription: {
-        model: "whisper-1",
-      },
-      turn_detection: {
-        type: "server_vad",
-        threshold: 0.5,
-        prefix_padding_ms: 300,
-        silence_duration_ms: 600,
+      output_modalities: ["audio"],
+      audio: {
+        input: {
+          transcription: { model: "whisper-1" },
+          turn_detection: {
+            type: "server_vad",
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 600,
+          },
+        },
+        output: {
+          voice: config.voice,
+        },
       },
       tools: config.tools,
       tool_choice: "auto",
@@ -194,7 +203,7 @@ function configureSession() {
   sendEvent({
     type: "response.create",
     response: {
-      modalities: ["audio", "text"],
+      output_modalities: ["audio"],
       instructions:
         "Open the conversation in English with energy and warmth. Introduce yourself as Loto — Baloto's game guide. Make the user feel like they've just walked up to a friendly expert. Give them a real sense of what you can help with — not a list, but a feeling. Then ask one light, open question to get the conversation going. Two to three sentences max. Sound like a person, not a system.",
     },
@@ -218,6 +227,7 @@ function switchToAgent(type: AgentType) {
   sendEvent({
     type: "session.update",
     session: {
+      type: "realtime",
       instructions: config.prompt,
       tools: config.tools,
       tool_choice: "auto",
@@ -235,7 +245,7 @@ function switchToAgent(type: AgentType) {
     sendEvent({
       type: "response.create",
       response: {
-        modalities: ["audio", "text"],
+        output_modalities: ["audio"],
         instructions: handoffInstruction,
       },
     });
@@ -249,14 +259,19 @@ function handleServerEvent(event: Record<string, unknown>) {
     useAgentStore.getState();
 
   switch (event.type) {
+    // GA renamed assistant audio events response.audio.* → response.output_audio.*.
+    // Old names kept as fallbacks so the handler is resilient either way.
+    case "response.output_audio.delta":
     case "response.audio.delta":
       setStatus("speaking");
       break;
 
+    case "response.output_audio_transcript.delta":
     case "response.audio_transcript.delta":
       appendTranscript(event.delta as string);
       break;
 
+    case "response.output_audio_transcript.done":
     case "response.audio_transcript.done":
       setStatus("listening");
       break;
@@ -319,6 +334,7 @@ async function executeToolCall(
     case "show_games":
       baloto.setPanelVisible(true);
       baloto.setGameIconsFloat();
+      sfx.whoosh();
       if (args.focusGameId) baloto.setShowcasedGame(args.focusGameId as GameId);
       sendToolResult(callId, { action: "show_games" });
       break;
@@ -400,6 +416,9 @@ async function executeToolCall(
       if (args.color !== undefined)
         baloto.setActiveColor(args.color as string);
 
+      // Sound for the number pick is owned by the slot-reel draw (reel spin +
+      // coin land), triggered via the ballQueue inside setActiveNumbers above.
+
       sendToolResult(callId, {
         action: "set_numbers",
         success: true,
@@ -438,6 +457,7 @@ async function executeToolCall(
         }
       }
       baloto.confirmPlay();
+      sfx.coins(); // play added to cart — cascade of coins
       sendToolResult(callId, {
         action: "confirm_play",
         success: true,
@@ -571,6 +591,8 @@ async function executeToolCall(
       baloto.advanceCheckout();
       const after = useBalotoStore.getState().checkoutStep;
       const advanced = before !== after;
+      if (advanced) sfx.select();
+      else sfx.error();
       if (!advanced) {
         const issues: string[] = [];
         if (cNum.replace(/\s/g, "").length !== 16) issues.push("card number must be 16 digits");
@@ -599,6 +621,8 @@ async function executeToolCall(
       baloto.advanceCheckout();
       const after = useBalotoStore.getState().checkoutStep;
       const advanced = before !== after;
+      if (advanced) sfx.select();
+      else sfx.error();
       sendToolResult(callId, {
         action: "submit_paypal_payment",
         success: advanced,
@@ -614,12 +638,15 @@ async function executeToolCall(
       baloto.advanceCheckout();
       const after = useBalotoStore.getState().checkoutStep;
       if (before === after) {
+        sfx.error();
         sendToolResult(callId, {
           action: "advance_checkout",
           success: false,
           message: `Could not advance — blocked at "${before}" step (form may be incomplete or already at final step).`,
         });
       } else {
+        // The success screen plays its own win fanfare; only chime mid-flow.
+        if (after !== "success") sfx.select();
         sendToolResult(callId, {
           action: "advance_checkout",
           success: true,

@@ -9,11 +9,13 @@ import FloatingCartButton from "@/components/agent/FloatingCartButton";
 import GameShowcase from "@/components/baloto/GameShowcase";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import AmbientBackdrop from "@/components/background/AmbientBackdrop";
-import NumberBallShowcase from "@/components/baloto/NumberBallShowcase";
+import SlotReelDraw from "@/components/baloto/SlotReelDraw";
 import ColorSplash from "@/components/baloto/ColorSplash";
 import ZodiacFlash from "@/components/baloto/ZodiacFlash";
 import JackpotRain from "@/components/baloto/JackpotRain";
 import GameIconsFloat from "@/components/baloto/GameIconsFloat";
+import WinnersTicker from "@/components/casino/WinnersTicker";
+import JackpotTicker from "@/components/casino/JackpotTicker";
 import { colors, zIndex, easing, duration } from "@/lib/design/tokens";
 
 export default function OrderingScene() {
@@ -23,6 +25,10 @@ export default function OrderingScene() {
   return (
     <>
       <AmbientBackdrop />
+
+      {/* ── Casino floor chrome: live winners feed + jackpot marquee ───────── */}
+      <WinnersTicker />
+      <JackpotTicker />
 
       {/* ── Showcase column (left) ─────────────────────────────────────────── */}
       <motion.div
@@ -108,7 +114,7 @@ export default function OrderingScene() {
 
       {/* ── Triggered effects (ordering-scene only) ────────────────────────── */}
       <GameIconsFloat />
-      <NumberBallShowcase />
+      <SlotReelDraw />
       <ColorSplash />
       <ZodiacFlash />
       <JackpotRain />

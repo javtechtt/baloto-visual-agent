@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, X } from "lucide-react";
 import { useBalotoStore } from "@/store/baloto.store";
 import { useAgentStore } from "@/store/agent.store";
-import { zIndex, easing, gradients } from "@/lib/design/tokens";
+import { zIndex, easing, gradients, neon, glow } from "@/lib/design/tokens";
+import { sfx } from "@/lib/audio/sfx";
 
 export default function FloatingCartButton() {
   const plays = useBalotoStore((s) => s.plays);
@@ -41,11 +42,18 @@ export default function FloatingCartButton() {
         boxShadow: panelVisible
           ? "0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)"
           : hasItems
-          ? "0 0 28px rgba(239,68,68,0.45), 0 4px 24px rgba(0,0,0,0.5)"
+          ? `${glow.box(neon.magenta, 0.9)}, 0 4px 24px rgba(0,0,0,0.5)`
           : "0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)",
-        border: "1px solid rgba(255,255,255,0.12)",
+        border: hasItems && !panelVisible
+          ? `1px solid ${neon.magentaBright}66`
+          : "1px solid rgba(255,255,255,0.12)",
       }}
-      onClick={() => setPanelVisible(!panelVisible)}
+      onClick={() => {
+        if (panelVisible) sfx.click();
+        else sfx.whoosh();
+        setPanelVisible(!panelVisible);
+      }}
+      onMouseEnter={() => sfx.hover()}
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.93 }}
       initial={{ scale: 0, opacity: 0 }}
@@ -81,7 +89,7 @@ export default function FloatingCartButton() {
                 <motion.span
                   key="badge"
                   className="absolute -top-2 -right-2.5 min-w-[18px] h-[18px] px-0.5 rounded-full text-[10px] font-bold flex items-center justify-center"
-                  style={{ background: "white", color: "#ef4444" }}
+                  style={{ background: "white", color: neon.magenta }}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
@@ -101,7 +109,7 @@ export default function FloatingCartButton() {
         <motion.div
           className="absolute inset-0 rounded-full pointer-events-none"
           aria-hidden="true"
-          style={{ border: "2px solid rgba(239,68,68,0.5)" }}
+          style={{ border: `2px solid ${neon.magenta}88` }}
           animate={{ scale: [1, 1.6, 1.6], opacity: [0.8, 0, 0] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
         />

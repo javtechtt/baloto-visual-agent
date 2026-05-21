@@ -378,7 +378,7 @@ function DigitPicker({
             color: count === 0 ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.5)",
             cursor: count === 0 ? "not-allowed" : "pointer",
           }}
-          whileHover={count === 0 ? {} : { scale: 1.1, color: "#ef4444" }}
+          whileHover={count === 0 ? {} : { scale: 1.1, color: "#ff2d95" }}
           whileTap={count === 0 ? {} : { scale: 0.9 }}
         >
           <Delete size={14} />

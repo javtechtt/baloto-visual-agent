@@ -51,7 +51,7 @@ export const GAMES: Record<GameId, BalotoGame> = {
     price: 3700,
     color: "from-red-600 to-red-800",
     accentColor: "#ef4444",
-    jackpotLabel: "Pozo Mayor",
+    jackpotLabel: "Grand Jackpot",
   },
   revancha: {
     id: "revancha",
@@ -68,7 +68,7 @@ export const GAMES: Record<GameId, BalotoGame> = {
     price: 1500,
     color: "from-yellow-500 to-orange-600",
     accentColor: "#f59e0b",
-    jackpotLabel: "Premio Revancha",
+    jackpotLabel: "Revancha Prize",
   },
   superastro: {
     id: "superastro",
@@ -84,7 +84,7 @@ export const GAMES: Record<GameId, BalotoGame> = {
     price: 1000,
     color: "from-purple-600 to-indigo-700",
     accentColor: "#8b5cf6",
-    jackpotLabel: "Premio Mayor",
+    jackpotLabel: "Top Prize",
   },
   miloto: {
     id: "miloto",
@@ -98,7 +98,7 @@ export const GAMES: Record<GameId, BalotoGame> = {
     price: 1000,
     color: "from-cyan-500 to-blue-600",
     accentColor: "#06b6d4",
-    jackpotLabel: "Premio Mayor",
+    jackpotLabel: "Top Prize",
   },
   colorloto: {
     id: "colorloto",
@@ -114,7 +114,7 @@ export const GAMES: Record<GameId, BalotoGame> = {
     price: 500,
     color: "from-emerald-500 to-green-600",
     accentColor: "#10b981",
-    jackpotLabel: "Premio",
+    jackpotLabel: "Prize",
   },
 };
 
