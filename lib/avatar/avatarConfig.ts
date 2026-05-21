@@ -78,9 +78,19 @@ export const AVATAR_CONFIG = {
   },
 
   // Procedural speaking layer (head/jaw/torso rhythm, scaled by live audio).
-  // `mouthMax` = how far the mouth opens at full voice volume (0..1). Lower =
-  // barely opens; raise toward ~0.8 for big mouth movement.
-  speak: { headNod: 0.16, headYaw: 0.06, jaw: 0.32, torso: 0.05, rate: 9, mouthMax: 0.35 },
+  // `headNod` = nod amount while talking (lower = subtler). `headPitch` = a
+  // constant tilt while talking; negative tips the chin slightly down to counter
+  // a back-leaning pose (flip to positive if she tips too far forward).
+  // `mouthMax` = how far the mouth opens at full volume (0..1).
+  speak: {
+    headNod: 0.06,
+    headYaw: 0.05,
+    headPitch: -0.04,
+    jaw: 0.32,
+    torso: 0.05,
+    rate: 9,
+    mouthMax: 0.28,
+  },
 
   // Procedural listening layer — slow attentive sway.
   listen: { headYaw: 0.045, rate: 0.9 },

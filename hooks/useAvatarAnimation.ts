@@ -162,7 +162,7 @@ export function useAvatarAnimation(
       if (speak > 0.02) {
         const s = AVATAR_CONFIG.speak;
         const amp = Math.min(1, speak + 0.15);
-        nodX += Math.sin(t * s.rate) * s.headNod * amp;
+        nodX += s.headPitch + Math.sin(t * s.rate) * s.headNod * amp;
         yawY += Math.sin(t * s.rate * 0.5) * s.headYaw * amp;
       }
       if (state === "listening" && speak < 0.05) {
