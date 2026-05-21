@@ -46,24 +46,27 @@ export default function AvatarStage({ width = 300, height = 360 }: Props) {
       style={{ width, height, pointerEvents: "none" }}
       aria-hidden="true"
     >
-      {/* Stage glow pooled under the host (raised to sit under her lower body) */}
+      {/* Light pool on the floor under her */}
       <div
         className="absolute inset-0"
         style={{
-          background: `radial-gradient(58% 42% at 50% 72%, ${neon.violet}3a 0%, transparent 70%)`,
+          background: `radial-gradient(52% 26% at 50% 90%, ${neon.violet}4a 0%, transparent 70%)`,
           filter: "blur(10px)",
         }}
       />
-      {/* Neon floor line */}
+      {/* Neon "floor disc" — a flattened ellipse ring reads as a stage floor in
+          perspective; sits low so she stands on it. (% height keeps it
+          proportional across the desktop/mobile canvas sizes.) */}
       <div
         className="absolute left-1/2 -translate-x-1/2"
         style={{
-          bottom: "22%",
-          width: "62%",
-          height: 2,
-          background: `linear-gradient(90deg, transparent, ${neon.cyan}, ${neon.magenta}, transparent)`,
-          boxShadow: `0 0 16px ${neon.cyan}aa`,
-          opacity: 0.7,
+          bottom: "-3%",
+          width: "122%",
+          height: "10%",
+          borderRadius: "50%",
+          border: `2px solid ${neon.cyan}`,
+          boxShadow: `0 0 26px ${neon.cyan}, 0 0 70px ${neon.magenta}55, inset 0 0 30px ${neon.magenta}55`,
+          opacity: 0.85,
         }}
       />
 

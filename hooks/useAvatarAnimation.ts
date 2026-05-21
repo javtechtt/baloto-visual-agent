@@ -116,7 +116,9 @@ export function useAvatarAnimation(
     // Amplitude opens the mouth; brightness slides the shape dark→bright.
     // Fallbacks: a single mouth morph, then a jaw bone, then the head-bob below.
     if (useVisemeBlend) {
-      const open = Math.min(1, speak * 1.6);
+      // `speak` is ~1 during most speech, so the cap (mouthMax) sets how far the
+      // mouth opens; it stays proportional to loudness below the cap.
+      const open = speak * AVATAR_CONFIG.speak.mouthMax;
       const round = Math.max(0, 1 - bright * 2.2); // dark / low  → O, U
       const spread = Math.max(0, (bright - 0.4) * 2.2); // bright / high → E, I
       const mid = Math.max(0, 1 - round - spread); // mid → aa
@@ -136,10 +138,13 @@ export function useAvatarAnimation(
       bones.jaw.quaternion.multiply(tmpQuat.current);
     }
 
-    // Expression morphs by state (graceful no-op if the asset lacks them)
-    const happy = state === "celebration" ? 0.6 : 0;
+    // Expression morphs by state. A gentle resting smile keeps her warm and
+    // approachable (a flat neutral face reads as "off"); bigger on celebration,
+    // off during caution. Tune the 0.16 baseline to taste.
+    const happy =
+      state === "celebration" ? 0.6 : state === "caution" ? 0 : 0.16;
     for (const n of EXPRESSIONS.happy) easeMorph(morphs, n, happy, 0.08);
-    const sad = state === "caution" ? 0.35 : 0;
+    const sad = state === "caution" ? 0.32 : 0;
     for (const n of EXPRESSIONS.sad) easeMorph(morphs, n, sad, 0.06);
 
     // Eye blink — a quick natural pulse every ~4.2s (people blink while talking)

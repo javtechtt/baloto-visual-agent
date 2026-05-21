@@ -40,6 +40,29 @@ function HostModel() {
     return external.length > 0 ? external : baseClips;
   }, [animGltfs, baseClips]);
 
+  // Clean up the GLB for our (non-IBL) stage: zero default morph weights (the
+  // Avaturn face rig defaults the tongue to 0.6 → sticks out) and make skin/eyes
+  // non-metallic (exported as metalness=1, which renders dark/dead without an
+  // environment map — the classic "black eyes" look).
+  useEffect(() => {
+    scene.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      if (mesh.morphTargetInfluences) mesh.morphTargetInfluences.fill(0);
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      mats.forEach((mat) => {
+        const m = mat as THREE.MeshStandardMaterial;
+        if (m && "metalness" in m) {
+          m.metalness = 0;
+          if ((m.name || "").toLowerCase().includes("eye")) {
+            m.roughness = Math.min(m.roughness ?? 1, 0.45); // catch-light → lively eyes
+          }
+          m.needsUpdate = true;
+        }
+      });
+    });
+  }, [scene]);
+
   const state = resolveAvatarState(status, transient);
   useAvatarAnimation(scene, clips, state);
 
@@ -74,23 +97,23 @@ function CameraRig() {
 function StageLights() {
   return (
     <>
-      <hemisphereLight args={["#b388ff", "#0a0517", 0.6]} />
-      <ambientLight intensity={0.4} />
-      {/* Key — warm, front-right */}
+      <hemisphereLight args={["#b388ff", "#0a0517", 0.55]} />
+      <ambientLight intensity={0.45} />
+      {/* Key — warm, front-right (softened: skin is diffuse now, not metallic) */}
       <spotLight
         position={[3, 5, 5]}
         angle={0.6}
         penumbra={1}
-        intensity={55}
+        intensity={26}
         color="#fff3df"
         distance={22}
       />
       {/* Soft front fill for a readable face */}
-      <directionalLight position={[0, 1.8, 5]} intensity={1.1} color="#ffffff" />
-      {/* Cyan rim, back-left */}
-      <directionalLight position={[-4, 2.5, -3]} intensity={2.4} color="#22d3ee" />
+      <directionalLight position={[0, 1.8, 5]} intensity={0.9} color="#fff6ec" />
+      {/* Cyan rim, back-left — neon accent kept subtle so it doesn't tint skin */}
+      <directionalLight position={[-4, 2.5, -3]} intensity={1.4} color="#22d3ee" />
       {/* Magenta rim, back-right */}
-      <pointLight position={[3.5, 1.8, -3]} intensity={32} color="#ff2d95" distance={16} />
+      <pointLight position={[3.5, 1.8, -3]} intensity={16} color="#ff2d95" distance={16} />
     </>
   );
 }

@@ -37,17 +37,30 @@ export default function OrderingScene() {
       <WinnersTicker />
       <JackpotTicker />
 
-      {/* ── 3D voice host — right side, full body. Yields when the games panel
-             opens (it shares the right edge with the panel). ─────────────────── */}
-      <motion.div
-        className="fixed top-0 right-0 h-full flex items-center justify-end pointer-events-none"
-        style={{ zIndex: zIndex.content + 1, paddingRight: isMobile ? 0 : 10 }}
-        animate={{ opacity: panelOpen ? 0 : 1, x: panelOpen ? 60 : 0 }}
-        transition={{ duration: 0.45, ease: easing.standard }}
-        aria-hidden="true"
-      >
-        <AvatarStage width={isMobile ? 250 : 500} height={isMobile ? 420 : 790} />
-      </motion.div>
+      {/* ── 3D voice host. Desktop: full-height presence on the right. Mobile:
+             a small presenter tucked bottom-right so the carousel keeps the
+             center (carousel-first). Both yield when the cart panel opens. ────── */}
+      {isMobile ? (
+        <motion.div
+          className="fixed pointer-events-none"
+          style={{ bottom: 74, right: 2, zIndex: zIndex.content + 1 }}
+          animate={{ opacity: panelOpen ? 0 : 1, y: panelOpen ? 30 : 0 }}
+          transition={{ duration: 0.4, ease: easing.standard }}
+          aria-hidden="true"
+        >
+          <AvatarStage width={132} height={190} />
+        </motion.div>
+      ) : (
+        <motion.div
+          className="fixed top-0 right-0 h-full flex items-center justify-end pointer-events-none"
+          style={{ zIndex: zIndex.content + 1, paddingRight: 10 }}
+          animate={{ opacity: panelOpen ? 0 : 1, x: panelOpen ? 60 : 0 }}
+          transition={{ duration: 0.45, ease: easing.standard }}
+          aria-hidden="true"
+        >
+          <AvatarStage width={500} height={790} />
+        </motion.div>
+      )}
 
       {/* ── Showcase column (left) ─────────────────────────────────────────── */}
       <motion.div

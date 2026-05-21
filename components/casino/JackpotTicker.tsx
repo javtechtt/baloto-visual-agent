@@ -57,7 +57,7 @@ export default function JackpotTicker() {
       <motion.span
         className="font-display font-black leading-none tabular-nums"
         style={{
-          fontSize: "clamp(26px, 5.2vw, 56px)",
+          fontSize: "clamp(19px, 5.2vw, 56px)",
           color: neon.gold,
           textShadow: glow.text(neon.gold, 0.9),
         }}

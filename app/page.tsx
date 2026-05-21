@@ -29,7 +29,7 @@ export default function Home() {
           control in that corner (avoids the logo overlapping it). */}
       {!inCheckout && (
       <motion.div
-        className="fixed left-6 flex items-center gap-2.5 pointer-events-none"
+        className="fixed left-6 hidden sm:flex items-center gap-2.5 pointer-events-none"
         style={{ zIndex: zIndex.logo, top: 40 }}
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}

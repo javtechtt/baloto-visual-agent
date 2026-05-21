@@ -44,7 +44,8 @@ export default function AgentDock({ variant = "full" }: AgentDockProps) {
       role="region"
       aria-label="Voice agent controls"
     >
-      <TranscriptBubble />
+      {/* Visual chat is removed on phones (< tablet) — voice-only there. */}
+      {!isMobile && <TranscriptBubble />}
 
       <AnimatePresence>
         {error && (

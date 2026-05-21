@@ -72,13 +72,15 @@ export const AVATAR_CONFIG = {
   // she stays the same apparent size. z = distance (unchanged = same closeness);
   // `target.y` re-centers the crop vertically.
   camera: {
-    position: [0.5, 1.22, 2.65] as [number, number, number],
-    fov: 34,
-    target: [0, 1.05, 0] as [number, number, number],
+    position: [0.5, 1.32, 2.65] as [number, number, number],
+    fov: 36,
+    target: [0, 1.18, 0] as [number, number, number],
   },
 
   // Procedural speaking layer (head/jaw/torso rhythm, scaled by live audio).
-  speak: { headNod: 0.16, headYaw: 0.06, jaw: 0.32, torso: 0.05, rate: 9 },
+  // `mouthMax` = how far the mouth opens at full voice volume (0..1). Lower =
+  // barely opens; raise toward ~0.8 for big mouth movement.
+  speak: { headNod: 0.16, headYaw: 0.06, jaw: 0.32, torso: 0.05, rate: 9, mouthMax: 0.35 },
 
   // Procedural listening layer — slow attentive sway.
   listen: { headYaw: 0.045, rate: 0.9 },
