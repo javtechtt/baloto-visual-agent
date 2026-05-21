@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, X } from "lucide-react";
 import { useBalotoStore } from "@/store/baloto.store";
-import { useAgentStore } from "@/store/agent.store";
 import { zIndex, easing, gradients, neon, glow } from "@/lib/design/tokens";
 import { sfx } from "@/lib/audio/sfx";
 
@@ -12,12 +11,10 @@ export default function FloatingCartButton() {
   const panelVisible = useBalotoStore((s) => s.panelVisible);
   const setPanelVisible = useBalotoStore((s) => s.setPanelVisible);
   const checkoutStep = useBalotoStore((s) => s.checkoutStep);
-  const status = useAgentStore((s) => s.status);
 
-  const isAgentActive = status !== "idle" && status !== "error";
-
-  // Show once agent is connected or there's something in the cart
-  if (!isAgentActive && plays.length === 0) return null;
+  // The cart button only exists once at least one bet is locked in — there is no
+  // cart (and no panel) before that.
+  if (plays.length === 0) return null;
 
   // Don't render a separate button during checkout — the panel header already has a close button
   if (checkoutStep && panelVisible) return null;

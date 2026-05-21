@@ -30,8 +30,6 @@ export default function SoundManager() {
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
     };
-    // setEnabled is stable (zustand) — run once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setEnabled]);
 
   return null;

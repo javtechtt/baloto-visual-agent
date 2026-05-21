@@ -7,8 +7,14 @@ import { useBalotoStore } from "@/store/baloto.store";
 import { GameId, serializeProductCatalog } from "@/lib/baloto/games";
 import { GAMES } from "@/lib/baloto/games";
 import type { CheckoutStep, PaymentMethod } from "@/store/baloto.store";
-import { startAudioVisualization, stopAudioVisualization } from "@/lib/audio/visualizer";
+import {
+  startAudioVisualization,
+  stopAudioVisualization,
+  startAgentAudioAnalysis,
+  stopAgentAudioAnalysis,
+} from "@/lib/audio/visualizer";
 import { sfx } from "@/lib/audio/sfx";
+import { useAvatarStore } from "@/store/avatar.store";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -93,11 +99,13 @@ export async function connectAgent(): Promise<void> {
     // constructing a MediaStream from the track directly. Also explicitly call
     // play() and handle the promise (Safari autoplay policy).
     peerConnection.ontrack = (event) => {
+      const remoteStream = event.streams[0] ?? new MediaStream([event.track]);
       if (audioElement) {
-        audioElement.srcObject =
-          event.streams[0] ?? new MediaStream([event.track]);
+        audioElement.srcObject = remoteStream;
         audioElement.play().catch(() => {});
       }
+      // Analyse the agent's spoken audio so the 3D host lip-syncs to it.
+      startAgentAudioAnalysis(remoteStream);
     };
 
     micStream.getTracks().forEach((track) => {
@@ -209,6 +217,8 @@ function configureSession() {
     },
   });
 
+  // The host waves hello as the AI delivers its opening line (AI speaks first).
+  useAvatarStore.getState().trigger("greeting", 3800);
   useAgentStore.getState().setStatus("listening");
 }
 
@@ -335,6 +345,7 @@ async function executeToolCall(
       baloto.setPanelVisible(true);
       baloto.setGameIconsFloat();
       sfx.whoosh();
+      useAvatarStore.getState().trigger("guiding", 2600);
       if (args.focusGameId) baloto.setShowcasedGame(args.focusGameId as GameId);
       sendToolResult(callId, { action: "show_games" });
       break;
@@ -458,6 +469,7 @@ async function executeToolCall(
       }
       baloto.confirmPlay();
       sfx.coins(); // play added to cart — cascade of coins
+      useAvatarStore.getState().trigger("celebration", 3200);
       sendToolResult(callId, {
         action: "confirm_play",
         success: true,
@@ -495,6 +507,7 @@ async function executeToolCall(
 
     case "trigger_jackpot_animation":
       baloto.triggerJackpotRain(args.amount as string | undefined);
+      useAvatarStore.getState().trigger("celebration", 3800);
       sendToolResult(callId, { action: "trigger_jackpot_animation" });
       break;
 
@@ -647,6 +660,7 @@ async function executeToolCall(
       } else {
         // The success screen plays its own win fanfare; only chime mid-flow.
         if (after !== "success") sfx.select();
+        else useAvatarStore.getState().trigger("celebration", 4000);
         sendToolResult(callId, {
           action: "advance_checkout",
           success: true,
@@ -754,6 +768,8 @@ function sendEvent(event: Record<string, unknown>) {
 
 export function disconnectAgent() {
   stopAudioVisualization();
+  stopAgentAudioAnalysis();
+  useAvatarStore.getState().clear();
   dataChannel?.close();
   peerConnection?.close();
   if (audioElement) {

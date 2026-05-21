@@ -16,11 +16,18 @@ import JackpotRain from "@/components/baloto/JackpotRain";
 import GameIconsFloat from "@/components/baloto/GameIconsFloat";
 import WinnersTicker from "@/components/casino/WinnersTicker";
 import JackpotTicker from "@/components/casino/JackpotTicker";
+import AvatarStage from "@/components/avatar/AvatarStage";
 import { colors, zIndex, easing, duration } from "@/lib/design/tokens";
 
 export default function OrderingScene() {
   const panelVisible = useBalotoStore((s) => s.panelVisible);
+  const playCount = useBalotoStore((s) => s.plays.length);
   const isMobile = useIsMobile();
+
+  // The cart/confirmation panel only appears once the user has locked in at
+  // least one bet — until then it's pure carousel + host + voice. (Picking
+  // numbers shows feedback via the slot-reel effect, not this panel.)
+  const panelOpen = panelVisible && playCount > 0;
 
   return (
     <>
@@ -30,19 +37,31 @@ export default function OrderingScene() {
       <WinnersTicker />
       <JackpotTicker />
 
+      {/* ── 3D voice host — right side, full body. Yields when the games panel
+             opens (it shares the right edge with the panel). ─────────────────── */}
+      <motion.div
+        className="fixed top-0 right-0 h-full flex items-center justify-end pointer-events-none"
+        style={{ zIndex: zIndex.content + 1, paddingRight: isMobile ? 0 : 10 }}
+        animate={{ opacity: panelOpen ? 0 : 1, x: panelOpen ? 60 : 0 }}
+        transition={{ duration: 0.45, ease: easing.standard }}
+        aria-hidden="true"
+      >
+        <AvatarStage width={isMobile ? 250 : 500} height={isMobile ? 420 : 790} />
+      </motion.div>
+
       {/* ── Showcase column (left) ─────────────────────────────────────────── */}
       <motion.div
         className="relative flex-shrink-0 overflow-hidden h-full"
         style={{ zIndex: zIndex.content }}
-        animate={isMobile ? { width: "100%" } : { width: panelVisible ? "45%" : "100%" }}
+        animate={isMobile ? { width: "100%" } : { width: panelOpen ? "45%" : "100%" }}
         transition={{ duration: duration.panel, ease: easing.standard }}
       >
         <GameShowcase />
       </motion.div>
 
-      {/* ── Desktop: right-side panel ──────────────────────────────────────── */}
+      {/* ── Desktop: right-side panel (cart confirmation; only after a bet) ── */}
       <AnimatePresence>
-        {panelVisible && !isMobile && (
+        {panelOpen && !isMobile && (
           <motion.div
             key="desktop-panel"
             className="relative flex-shrink-0 overflow-hidden h-full"
@@ -70,9 +89,9 @@ export default function OrderingScene() {
         )}
       </AnimatePresence>
 
-      {/* ── Mobile: bottom sheet ───────────────────────────────────────────── */}
+      {/* ── Mobile: bottom sheet (cart confirmation; only after a bet) ─────── */}
       <AnimatePresence>
-        {panelVisible && isMobile && (
+        {panelOpen && isMobile && (
           <motion.div
             key="mobile-panel"
             className="fixed bottom-0 left-0 right-0"

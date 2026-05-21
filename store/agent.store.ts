@@ -15,7 +15,9 @@ interface AgentStore {
   activeAgent: ActiveAgent;
   transcript: string;        // Latest agent speech text (streamed)
   userTranscript: string;    // Latest user speech text (from input transcription)
-  audioLevel: number;        // 0–1, used by the visualizer
+  audioLevel: number;        // 0–1, mic input level (visualizer)
+  agentAudioLevel: number;   // 0–1, agent OUTPUT loudness — drives mouth openness
+  agentVoiceBrightness: number; // 0–1, spectral brightness — drives vowel shape
   error: string | null;
 
   setStatus: (status: AgentStatus) => void;
@@ -24,6 +26,8 @@ interface AgentStore {
   appendTranscript: (delta: string) => void;
   setUserTranscript: (text: string) => void;
   setAudioLevel: (level: number) => void;
+  setAgentAudioLevel: (level: number) => void;
+  setAgentVoice: (level: number, brightness: number) => void;
   setError: (error: string | null) => void;
   reset: () => void;
 }
@@ -34,6 +38,8 @@ export const useAgentStore = create<AgentStore>((set) => ({
   transcript: "",
   userTranscript: "",
   audioLevel: 0,
+  agentAudioLevel: 0,
+  agentVoiceBrightness: 0,
   error: null,
 
   setStatus: (status) => set({ status }),
@@ -43,6 +49,9 @@ export const useAgentStore = create<AgentStore>((set) => ({
     set((state) => ({ transcript: state.transcript + delta })),
   setUserTranscript: (text) => set({ userTranscript: text }),
   setAudioLevel: (level) => set({ audioLevel: level }),
+  setAgentAudioLevel: (level) => set({ agentAudioLevel: level }),
+  setAgentVoice: (level, brightness) =>
+    set({ agentAudioLevel: level, agentVoiceBrightness: brightness }),
   setError: (error) => set({ error, status: error ? "error" : "idle" }),
   reset: () =>
     set({
@@ -51,6 +60,8 @@ export const useAgentStore = create<AgentStore>((set) => ({
       transcript: "",
       userTranscript: "",
       audioLevel: 0,
+      agentAudioLevel: 0,
+      agentVoiceBrightness: 0,
       error: null,
     }),
 }));

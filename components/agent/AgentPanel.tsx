@@ -3,21 +3,21 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { useBalotoStore } from "@/store/baloto.store";
-import GameGrid from "@/components/baloto/GameGrid";
 import PlaySlip from "@/components/baloto/PlaySlip";
 import CartPanel from "@/components/baloto/CartPanel";
-import { duration, colors } from "@/lib/design/tokens";
+import { duration, colors, neon, glow } from "@/lib/design/tokens";
 
-// Ordering-only right-side panel. Checkout has its own scene container — this
-// component never renders checkout chrome.
+// Ordering-only right-side panel. It is a CART / CONFIRMATION surface — it only
+// mounts once the user has locked in at least one bet (gated in OrderingScene),
+// so there is no game-browser here. Game discovery happens on the carousel +
+// by voice. If the agent is mid-building another play, the slip shows here too.
 
 export default function AgentPanel() {
   const activePlay = useBalotoStore((s) => s.activePlay);
-  const plays = useBalotoStore((s) => s.plays);
   const setPanelVisible = useBalotoStore((s) => s.setPanelVisible);
 
   return (
-    <div className="relative h-full flex flex-col" role="region" aria-label="Game Center">
+    <div className="relative h-full flex flex-col" role="region" aria-label="Your bets">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <motion.div
@@ -25,9 +25,13 @@ export default function AgentPanel() {
           animate={{ opacity: 1 }}
           className="flex items-center gap-2"
         >
-          <div className="w-1.5 h-1.5 rounded-full" style={{ background: colors.primary }} aria-hidden="true" />
+          <div
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ background: neon.cyan, boxShadow: glow.box(neon.cyan, 0.6) }}
+            aria-hidden="true"
+          />
           <span className="text-xs font-medium uppercase tracking-widest" style={{ color: colors.inkMuted }}>
-            Game Center
+            Your Bets
           </span>
         </motion.div>
         <button
@@ -42,7 +46,7 @@ export default function AgentPanel() {
         </button>
       </div>
 
-      {/* Content */}
+      {/* Content — active slip (if still building another) + the cart */}
       <div className="flex-1 overflow-y-auto scrollbar-none">
         <motion.div
           key="main"
@@ -50,10 +54,8 @@ export default function AgentPanel() {
           animate={{ opacity: 1 }}
           className="flex flex-col gap-5"
         >
-          <GameGrid />
-
           <AnimatePresence>
-            {activePlay ? (
+            {activePlay && (
               <motion.div
                 key="playslip"
                 initial={{ opacity: 0, height: 0 }}
@@ -63,36 +65,10 @@ export default function AgentPanel() {
               >
                 <PlaySlip />
               </motion.div>
-            ) : plays.length === 0 ? (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-center py-6"
-              >
-                <p className="text-xs" style={{ color: colors.inkSubtle }}>
-                  Select a game above to start building your play
-                </p>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-
-          <AnimatePresence>
-            {plays.length > 0 && (
-              <motion.div
-                key="cart"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: duration.normal, delay: 0.05 }}
-              >
-                <div className="pt-5" style={{ borderTop: `1px solid ${colors.surfaceBorder}` }}>
-                  <CartPanel />
-                </div>
-              </motion.div>
             )}
           </AnimatePresence>
+
+          <CartPanel />
         </motion.div>
       </div>
     </div>

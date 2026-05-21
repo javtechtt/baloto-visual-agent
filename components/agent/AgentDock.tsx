@@ -11,11 +11,8 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { zIndex, gradients, colors, neon, glow } from "@/lib/design/tokens";
 import { sfx } from "@/lib/audio/sfx";
 
-// Orb intrinsic size — used to derive the negative-margin clip math for both variants
+// Orb intrinsic size — used to derive the negative-margin clip math (compact variant)
 const ORB_FULL = 256;
-
-// Per-variant clip sizes
-const FULL_CLIP = 90;
 const COMPACT_CLIP = 36;
 
 interface AgentDockProps {
@@ -26,25 +23,24 @@ export default function AgentDock({ variant = "full" }: AgentDockProps) {
   const status = useAgentStore((s) => s.status);
   const error = useAgentStore((s) => s.error);
   const panelVisible = useBalotoStore((s) => s.panelVisible);
+  const playCount = useBalotoStore((s) => s.plays.length);
   const isMobile = useIsMobile();
 
   const isConnecting = status === "connecting";
   const isActive =
     status !== "idle" && status !== "error" && status !== "connecting";
 
-  // Full variant hides itself on mobile when the panel sheet is open
-  if (variant === "full" && isMobile && panelVisible) return null;
+  // Full variant hides itself on mobile only when the cart sheet is actually
+  // open (panel is gated on having locked in at least one bet).
+  if (variant === "full" && isMobile && panelVisible && playCount > 0) return null;
 
   if (variant === "compact") return <CompactDock isActive={isActive} isConnecting={isConnecting} />;
 
   // ── Full variant (ordering scene, bottom-left) ────────────────────────────
-  const clip = FULL_CLIP;
-  const margin = (clip - ORB_FULL) / 2;
-
   return (
     <div
       className="fixed bottom-4 left-4 flex flex-col items-start gap-2"
-      style={{ maxWidth: 340, zIndex: zIndex.dock }}
+      style={{ maxWidth: isMobile ? 220 : 380, zIndex: zIndex.dock }}
       role="region"
       aria-label="Voice agent controls"
     >
@@ -70,23 +66,6 @@ export default function AgentDock({ variant = "full" }: AgentDockProps) {
       </AnimatePresence>
 
       <div className="flex items-center gap-3">
-        <div
-          className="flex-shrink-0 overflow-hidden rounded-full"
-          style={{ width: clip, height: clip }}
-          aria-hidden="true"
-        >
-          <div
-            style={{
-              width: ORB_FULL,
-              height: ORB_FULL,
-              marginLeft: margin,
-              marginTop: margin,
-            }}
-          >
-            <AgentOrb />
-          </div>
-        </div>
-
         <AnimatePresence mode="wait">
           {!isActive ? (
             <motion.button
