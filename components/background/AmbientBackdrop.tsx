@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { colors, zIndex, neon } from "@/lib/design/tokens";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // The casino floor. Layered from back to front:
 //   1. violet floor-wash radial
@@ -49,6 +50,11 @@ const SPARKLES = [
 ] as const;
 
 export default function AmbientBackdrop() {
+  // Phones skip the GPU-heavy layers (blurred bokeh, animated grid, sparkles,
+  // blend-mode grain) — those are what tank the frame rate on Android. The cheap
+  // layers (wash, spotlight, horizon, vignette) stay so it still reads as a floor.
+  const isMobile = useIsMobile();
+
   return (
     <div
       className="absolute inset-0 overflow-hidden pointer-events-none"
@@ -73,8 +79,8 @@ export default function AmbientBackdrop() {
         transition={{ duration: 44, repeat: Infinity, ease: "easeInOut" }}
       />
 
-      {/* 2 ── Drifting bokeh lights */}
-      {BOKEH.map((b, i) => (
+      {/* 2 ── Drifting bokeh lights (desktop only — blur() is costly on mobile) */}
+      {!isMobile && BOKEH.map((b, i) => (
         <motion.div
           key={i}
           className="absolute rounded-full"
@@ -95,31 +101,34 @@ export default function AmbientBackdrop() {
         />
       ))}
 
-      {/* 3 ── Tron perspective grid — bottom 52%, scrolling toward viewer */}
-      <div
-        className="absolute left-0 right-0 bottom-0 overflow-hidden"
-        style={{ height: "52%", perspective: "440px", perspectiveOrigin: "50% 0%" }}
-      >
-        <motion.div
-          className="absolute left-1/2 bottom-0"
-          style={{
-            width: "260%",
-            height: "180%",
-            marginLeft: "-130%",
-            transform: "rotateX(74deg)",
-            transformOrigin: "50% 100%",
-            backgroundImage: `
-              linear-gradient(to right, ${neon.cyan}55 1px, transparent 1px),
-              linear-gradient(to bottom, ${neon.violet}55 1px, transparent 1px)`,
-            backgroundSize: "64px 64px",
-            maskImage: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 88%)",
-            WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 88%)",
-            willChange: "background-position",
-          }}
-          animate={{ backgroundPositionY: ["0px", "64px"] }}
-          transition={{ duration: 2.6, repeat: Infinity, ease: "linear" }}
-        />
-      </div>
+      {/* 3 ── Tron perspective grid — bottom 52%, scrolling toward viewer.
+              Desktop only (animated mask + 3D transform is heavy on mobile). */}
+      {!isMobile && (
+        <div
+          className="absolute left-0 right-0 bottom-0 overflow-hidden"
+          style={{ height: "52%", perspective: "440px", perspectiveOrigin: "50% 0%" }}
+        >
+          <motion.div
+            className="absolute left-1/2 bottom-0"
+            style={{
+              width: "260%",
+              height: "180%",
+              marginLeft: "-130%",
+              transform: "rotateX(74deg)",
+              transformOrigin: "50% 100%",
+              backgroundImage: `
+                linear-gradient(to right, ${neon.cyan}55 1px, transparent 1px),
+                linear-gradient(to bottom, ${neon.violet}55 1px, transparent 1px)`,
+              backgroundSize: "64px 64px",
+              maskImage: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 88%)",
+              WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 88%)",
+              willChange: "background-position",
+            }}
+            animate={{ backgroundPositionY: ["0px", "64px"] }}
+            transition={{ duration: 2.6, repeat: Infinity, ease: "linear" }}
+          />
+        </div>
+      )}
 
       {/* 4 ── Horizon glow — bright neon seam at the grid's vanishing point */}
       <div
@@ -146,8 +155,8 @@ export default function AmbientBackdrop() {
         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
       />
 
-      {/* 6 ── Rising sparkle dust */}
-      {SPARKLES.map((s, i) => (
+      {/* 6 ── Rising sparkle dust (desktop only) */}
+      {!isMobile && SPARKLES.map((s, i) => (
         <motion.div
           key={i}
           className="absolute rounded-full"
@@ -179,16 +188,18 @@ export default function AmbientBackdrop() {
         }}
       />
 
-      {/* Film grain — static, low opacity */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: `url("${NOISE_DATA_URI}")`,
-          backgroundSize: "220px 220px",
-          mixBlendMode: "overlay",
-          opacity: 0.05,
-        }}
-      />
+      {/* Film grain — desktop only (mix-blend-mode forces a costly layer) */}
+      {!isMobile && (
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url("${NOISE_DATA_URI}")`,
+            backgroundSize: "220px 220px",
+            mixBlendMode: "overlay",
+            opacity: 0.05,
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -94,7 +94,7 @@ function CameraRig() {
 // fill so the face stays readable. No shadow maps (avoids harsh shadows); the
 // figure is grounded by a soft ContactShadow instead.
 
-function StageLights() {
+function StageLights({ lite = false }: { lite?: boolean }) {
   return (
     <>
       <hemisphereLight args={["#b388ff", "#0a0517", 0.55]} />
@@ -110,10 +110,13 @@ function StageLights() {
       />
       {/* Soft front fill for a readable face */}
       <directionalLight position={[0, 1.8, 5]} intensity={0.9} color="#fff6ec" />
-      {/* Cyan rim, back-left — neon accent kept subtle so it doesn't tint skin */}
-      <directionalLight position={[-4, 2.5, -3]} intensity={1.4} color="#22d3ee" />
-      {/* Magenta rim, back-right */}
-      <pointLight position={[3.5, 1.8, -3]} intensity={16} color="#ff2d95" distance={16} />
+      {/* Neon rim lights — skipped on low-power devices to save fragment cost */}
+      {!lite && (
+        <>
+          <directionalLight position={[-4, 2.5, -3]} intensity={1.4} color="#22d3ee" />
+          <pointLight position={[3.5, 1.8, -3]} intensity={16} color="#ff2d95" distance={16} />
+        </>
+      )}
     </>
   );
 }
@@ -121,15 +124,24 @@ function StageLights() {
 // ─── Canvas ───────────────────────────────────────────────────────────────────
 
 export default function AvatarHost3D() {
+  // This component is only mounted client-side (ssr:false), so window is safe.
+  // Low-power = phones: cap pixel density at 1, drop antialiasing + rim lights,
+  // and render the contact shadow once instead of every frame. Big FPS win on
+  // Android GPUs (the iPhone could brute-force the heavier path).
+  const lowPower =
+    typeof window !== "undefined" &&
+    (window.innerWidth < 768 ||
+      window.matchMedia?.("(pointer: coarse)").matches);
+
   return (
     <Canvas
       camera={{ position: AVATAR_CONFIG.camera.position, fov: AVATAR_CONFIG.camera.fov }}
-      dpr={[1, 2]}
-      gl={{ alpha: true, antialias: true }}
+      dpr={lowPower ? 1 : [1, 2]}
+      gl={{ alpha: true, antialias: !lowPower, powerPreference: "high-performance" }}
       style={{ background: "transparent" }}
     >
       <CameraRig />
-      <StageLights />
+      <StageLights lite={lowPower} />
       <Suspense fallback={null}>
         <HostModel />
         <ContactShadows
@@ -138,6 +150,8 @@ export default function AvatarHost3D() {
           scale={6}
           blur={2.8}
           far={3.5}
+          resolution={lowPower ? 128 : 256}
+          frames={lowPower ? 1 : Infinity}
           color="#000000"
         />
       </Suspense>
